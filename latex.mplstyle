@@ -1,0 +1,7 @@
+legend.fontsize :  x-large 
+axes.labelsize :  x-large 
+axes.titlesize : x-large
+xtick.labelsize : x-large
+ytick.labelsize : x-large 
+text.usetex : True
+font.family : serif
