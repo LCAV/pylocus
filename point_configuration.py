@@ -9,6 +9,12 @@ import numpy as np
 import settings
 from math import pi
 
+def create_from_points(points, PointClass):
+    new = PointClass(points.shape[0], points.shape[1])
+    new.points = points
+    new.init()
+    return new
+
 class PointConfiguration:
     """Class describing a typical point configuration.
 

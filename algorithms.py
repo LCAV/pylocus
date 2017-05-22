@@ -1,3 +1,6 @@
+#!/usr/bin/env python
+# module ALGORITHMS
+
 import numpy as np
 import matplotlib.pyplot as plt
 from math import pi, floor, cos, sin
@@ -33,6 +36,8 @@ def MDS(D, dim, method='simple',theta=True):
             return theta_from_eigendecomp(factor, u)
         else:
             return np.dot(np.diag(factor[:]),u.T)[:dim,:]
+    else:
+        print('Unknown method {} in MDS'.format(method))
 
 def classical_mds(D):
     return MDS(D,1,'geometric')
@@ -68,7 +73,8 @@ def procrustes(Y, X, scale=True):
         c = np.trace(np.diag(D))/sigmax
     else:
         c = np.trace(np.diag(D))/sigmax
-        assert abs(c-1) < 1e-10, 'scale not equal to 1: {}'.format(c)
+        if abs(c-1) > 1e-10:
+            print('scale not equal to 1: {}. Setting it to 1 now.'.format(c))
         c = 1.0
     R = np.dot(U, VT)
     #t = np.dot(muy - c*np.dot(R, mux))
@@ -134,7 +140,7 @@ def SRLS(anchors, r2, printout=False):
     B12 = np.linalg.inv(sqrtm(ATA))
     tmp = np.dot(B12, np.dot(D, B12))
     eig = np.linalg.eigvals(tmp)
-    # TODO: what is wrong here? sometimes I_orig is not of the correct sign? 
+    # TODO: what is wrong here? sometimes I_orig is not of the correct sign?
     eps = 0.01
     I_orig = -1.0/eig[0] + eps
     inf = 1e5
@@ -180,11 +186,64 @@ def SRLS(anchors, r2, printout=False):
 
     return yhat[:d]
 
+def get_step_size(i, coord, X_k, D, W, print_out=False):
+    def grad_f_i_x(i, coord, X_k, D, W, print_out):
+        '''
+        Returns gradient of f_i with respect to delta X_k at coord.
+
+        '''
+        if (print_out):
+            pass
+        N = D.shape[0]
+        other = np.delete(np.arange(X_k.shape[1]),coord)
+        a0 = a1 = a2 = a3 = 0
+        for j in range(N):
+            beta = X_k[i,coord] - X_k[j,coord]
+            alpha = np.linalg.norm(X_k[i,:] - X_k[j,:])**2-D[i,j]
+            a0 += 4 * W[i,j] * alpha * beta
+            a1 += 4 * W[i,j] * (2*(beta**2) + alpha**2)
+            a2 += 4 * W[i,j] * 3 * beta
+            a3 += 4 * W[i,j] #multiplies delta^3
+        poly = np.polynomial.Polynomial((a0, a1, a2, a3))
+        return poly
+    # Find roots of grad_f_x, corresponding to zero of gradient.
+    poly = grad_f_i_x(i, coord, X_k, D, W, print_out)
+    roots = poly.roots()
+    delta = np.real(roots[np.isreal(roots)])
+    if (print_out):
+        from plots_cti import plot_cost_function
+        deltas = np.linspace(delta-1.0,delta+1.0,100)
+        fs = []
+        for delta_x in deltas:
+            X_delta = X_k.copy()
+            X_delta[i,coord] += delta_x
+            fs.append(f(X_delta, D, W))
+        x_0 = X_k[i, coord]
+        x_delta = X_k[i,coord] + delta[0]
+        names = ['x','y','z']
+        plot_cost_function(deltas, x_0, x_delta, fs,  names[coord])
+    return delta
+
+def f(X_k, D, W):
+    def f_i(i, X_k, D, W):
+        N = D.shape[0]
+        sum_ = 0
+        for j in range(N):
+            sum_ += W[i,j]*(np.linalg.norm(X_k[i,:]-X_k[j,:])**2-D[i,j])**2
+        return sum_
+    N = D.shape[0]
+    sum_ = 0
+    for i in range(N):
+        sum_ += f_i(i, X_k, D, W)
+    return sum_
+
 def reconstruct_mds(dm, points, plot=False, method='super',Om=''):
     N = points.shape[0]
     d = points.shape[1]
     if method == 'super':
         Xhat, __ = super_mds(Om, dm, points[0,:], N, d)
+    elif method == 'mds':
+        Xhat = MDS(dm, d, 'geometric', False).T
     else:
         triu_idx = np.triu_indices(n=N,m=N,k=1)
         # create edm from distances
@@ -192,7 +251,6 @@ def reconstruct_mds(dm, points, plot=False, method='super',Om=''):
         edm[triu_idx[0],triu_idx[1]] = np.power(dm,2)
         edm = edm + edm.T
         Xhat = MDS(edm, d, method, False).T
-    #Y, R, t, c = procrustes(points[:d+1],Xhat, True)
     Y, R, t, c = procrustes(points[:-1],Xhat, True)
     if (plot):
         from plots import plot_points
@@ -206,3 +264,55 @@ def reconstruct_srls(dm, points, plot=False, index=-1):
     Y = points.copy()
     Y[index,:] = srls
     return Y
+
+def reconstruct_weighted(D, W, X_0, X_hat, X_real, print_out=False,):
+    from point_configuration import create_from_points, PointConfiguration
+    X_k = X_0.copy()
+    N = X_k.shape[0]
+    d = X_k.shape[1]
+
+    # create reference object
+    p = create_from_points(X_real, PointConfiguration)
+    # create optimization object
+    cd = create_from_points(X_k, PointConfiguration)
+
+    if print_out:
+        print('=======initialization=======')
+        print('---mds---- edm    ',np.linalg.norm(cd.edm-D))
+        print('---mds---- points ', np.linalg.norm(X_k - X_hat))
+        print('---real--- edm    ',np.linalg.norm(cd.edm-p.edm))
+        print('---real--- points ', np.linalg.norm(X_k - p.points))
+        print('cost function:',f(X_k, D, W))
+    fs = []
+    edms = []
+    points = []
+    done = False
+    for counter in range(10):
+        # sweep
+        for i in range(p.N):
+            for coord in range(p.d):
+                delt = get_step_size(i,coord,X_k,D,W)
+                if print_out:
+                    print_cost_function(delt, X_k, D, W, i, coord)
+                X_k[i,coord] += delt
+                f_this = f(X_k, D, W)
+                fs.append(f_this)
+                cd.points = X_k
+                cd.init()
+                edms.append(np.linalg.norm(cd.edm-D))
+                points.append(np.linalg.norm(X_k - p.points))
+                if len(fs) > 2 and abs(fs[-1] - fs[-2]) < 1e-10:
+                    if (print_out): 
+                        print('converged after {} steps.'.format(counter))
+                    return X_k, fs, edms, points
+        if (print_out):
+            print('======= step {} ======='.format(counter))
+            print('---mds---- edm    ',np.linalg.norm(cd.edm-D))
+            print('---mds---- points ', np.linalg.norm(X_k - X_hat))
+            print('---real--- edm    ',np.linalg.norm(cd.edm-p.edm))
+            print('---real--- points ', np.linalg.norm(X_k - p.points))
+            print('cost function:',f(X_k, D, W))
+    print('did not converge after {} iterations')
+
+if __name__=="__main__":
+    print('nothing happens when running this module.')

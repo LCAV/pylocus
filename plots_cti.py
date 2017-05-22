@@ -62,5 +62,39 @@ def plot_point_sets(point_sets, title='', size=[10, 10], filename='', names=None
     plt.legend(loc='best')
     plt.show()
 
+def plot_point_sets_3d(plot_points, names, title=''):
+    from mpl_toolkits.mplot3d import Axes3D
+    import itertools
+    cmap = ['b','g','k']
+    linestyles = [':',':','-.']
+    fig = plt.figure()
+    ax = fig.gca(projection='3d')
+    for counter, X in enumerate(plot_points):
+        N = X.shape[0]
+        first = True
+        for pairs in itertools.combinations(range(N),2):
+            x = X[pairs,0]
+            y = X[pairs,1]
+            z = X[pairs,2]
+            if first:
+                ax.plot(x, y, z, color=cmap[counter], linestyle=linestyles[counter],label=names[counter])
+                first = False
+            else:
+                ax.plot(x, y, z, color=cmap[counter], linestyle=linestyles[counter])
+    ax.set_title(title)
+    ax.legend()
+    plt.show()
+
+
+def plot_cost_function(deltas, x_0, x_delta, fs, name):
+    plt.figure()
+    plt.plot(deltas+x_0, fs,label='f')
+    plt.vlines(x_0,min(fs),max(fs),linestyle=':',label='current {}={:2.2f}'.format(name,x_0))
+    plt.vlines(x_delta,min(fs),max(fs),linestyle='-.',label='next {}={:2.2f}'.format(name,x_delta))
+    plt.xlabel('${}+\\Delta$'.format(name))
+    plt.ylabel('f')
+    plt.legend()
+    plt.title('$f_i$ around best {}+$\\Delta$'.format(name))
+
 if __name__=="__main__":
     print('nothing happens when running this module.')
