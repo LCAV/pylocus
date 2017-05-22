@@ -105,7 +105,7 @@ def super_mds(Om, dm, X0, N, d):
     return Xhat, Vhat
 
 
-def SRLS(anchors, r2, printout=False):
+def SRLS(anchors, weights, r2, printout=False):
     '''
     Squared range least squares (A)
     A.Beck, P.Stoica
@@ -127,11 +127,14 @@ def SRLS(anchors, r2, printout=False):
 
     from scipy import optimize
     from scipy.linalg import sqrtm
+    # Set up optimization problem
     n = anchors.shape[0]
     d = anchors.shape[1]
     A = np.c_[-2 * anchors, np.ones((n, 1))]
+    A = np.diag(np.power(weights,0.5)).dot(A)
     ATA = np.dot(A.T, A)
     b = r2 - np.power(np.linalg.norm(anchors, axis=1), 2)
+    b = np.diag(np.power(weights,0.5)).dot(b)
     D = np.zeros((d + 1, d + 1))
     D[:d, :d] = np.eye(d)
     if (printout):
@@ -146,6 +149,7 @@ def SRLS(anchors, r2, printout=False):
     B12 = np.linalg.inv(sqrtm(ATA))
     tmp = np.dot(B12, np.dot(D, B12))
     eig = np.linalg.eigvals(tmp)
+
     # TODO: what is wrong here? sometimes I_orig is not of the correct sign?
     eps = 0.01
     I_orig = -1.0 / eig[0] + eps
@@ -265,9 +269,11 @@ def reconstruct_mds(dm, points, plot=False, method='super', Om=''):
     return Y
 
 
-def reconstruct_srls(dm, points, plot=False, index=-1):
+def reconstruct_srls(dm, points, plot=False, index=-1, weights=None):
     anchors = np.delete(points, index, axis=0)
-    srls = SRLS(anchors, dm, plot)
+    if weights is None:
+        weights = np.ones(dm.shape)
+    srls = SRLS(anchors, dm, weights, plot)
     Y = points.copy()
     Y[index, :] = srls
     return Y
