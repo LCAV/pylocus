@@ -9,11 +9,6 @@ import numpy as np
 import settings
 from math import pi
 
-def create_from_points(points, PointClass):
-    new = PointClass(points.shape[0], points.shape[1])
-    new.points = points
-    new.init()
-    return new
 
 class PointConfiguration:
     """Class describing a typical point configuration.
@@ -115,10 +110,10 @@ class PointConfiguration:
                     other = np.delete(np.arange(3), (i, j))
                     u = (
                         self.points[i, :] - self.points[other, :]
-                    )  #/np.linalg.norm(self.points[i,:] - self.points[other,:])
+                    )  # /np.linalg.norm(self.points[i,:] - self.points[other,:])
                     v = (
                         self.points[j, :] - self.points[other, :]
-                    )  #/np.linalg.norm(self.points[j,:] - self.points[other,:])
+                    )  # /np.linalg.norm(self.points[j,:] - self.points[other,:])
                     self.points[-1, :] = (1.0 + gamma) * (
                         self.points[other, :] + alpha * u + beta * v)
                     #check if new direction lies between u and v.
@@ -218,8 +213,8 @@ class PointConfiguration:
             else:
                 print("Error: No rule defined for N = ", self.N)
         self.init()
-    
-# TODO: Which of the two below should be used? 
+
+# TODO: Which of the two below should be used?
 
     def get_inner_angle(self, corner, other):
         from basics import get_inner_angle
@@ -265,7 +260,6 @@ class PointConfiguration:
         theta_jk = from_0_to_2pi(theta_jk)
         return theta_ik, theta_jk
 
-
     def create_edm(self):
         rows, cols = np.indices((self.N, self.N))
         self.edm = np.sum(
@@ -281,10 +275,10 @@ class PointConfiguration:
                 abs_angles[j, i] = get_absolute_angle(self.points[j, :],
                                                       self.points[i, :])
                 if j > i:
-                    assert abs(abs_angles[i,j] - abs_angles[j,i]) - pi < 1e-10, \
+                    assert abs(abs_angles[i, j] - abs_angles[j, i]) - pi < 1e-10, \
                         "Angles do not add up to pi: %r-%r=%r" % \
-                        (abs_angles[i,j], abs_angles[j,i], \
-                        abs_angles[i,j] - abs_angles[j,i])
+                        (abs_angles[i, j], abs_angles[j, i],
+                         abs_angles[i, j] - abs_angles[j, i])
         self.abs_angles = abs_angles
 
     def create_abs_angles_from_edm(self):
@@ -329,13 +323,14 @@ class PointConfiguration:
                 theta[k] = self.get_inner_angle(corner, other)
                 theta[k] = from_0_to_pi(theta[k])
                 if settings.DEBUG:
-                    print(self.abs_angles[corner, other[0]], \
-                            self.abs_angles[corner, other[1]])
+                    print(self.abs_angles[corner, other[0]],
+                          self.abs_angles[corner, other[1]])
                     print('theta', corners[k, :], theta[k])
                 k = k + 1
             inner_angle_sum = theta[k - 1] + theta[k - 2] + theta[k - 3]
             assert abs(inner_angle_sum - pi) < 1e-10, \
-                    'inner angle sum: {} {} {}'.format(triangle, inner_angle_sum,(theta[k-1],theta[k-2],theta[k-3]))
+                'inner angle sum: {} {} {}'.format(
+                    triangle, inner_angle_sum, (theta[k - 1], theta[k - 2], theta[k - 3]))
         self.theta = theta
         self.corners = corners
         return theta, corners
@@ -426,7 +421,7 @@ class PointConfiguration:
                 G[jdx, idx] = cos(thetak_ij)
         return G
 
-# TODO: Which of these two is better? And should they really be in this class? 
+# TODO: Which of these two is better? And should they really be in this class?
 
     def reconstruct_from_inner_angles(self, theta):
         from algorithms import reconstruct_from_inner_angles
@@ -435,8 +430,9 @@ class PointConfiguration:
         reconstruction = reconstruct_from_inner_angles(
             self.points[0, :], self.points[1, :], self.abs_angles[0, 2],
             self.abs_angles[1, 2], theta_tensor)
-        new_points, __, __, __  = procrustes(self.points,reconstruction.points,scale=True)
-        reconstruction.points=new_points
+        new_points, __, __, __ = procrustes(
+            self.points, reconstruction.points, scale=True)
+        reconstruction.points = new_points
         reconstruction.init()
         return reconstruction
 
@@ -460,6 +456,7 @@ class PointConfiguration:
         from plots import plot_points
         plot_points(self.points[range_, :], title, size)
 
+
 class ConstrainedConfiguration(PointConfiguration):
     """ Class with linear constraints."
 
@@ -470,6 +467,7 @@ class ConstrainedConfiguration(PointConfiguration):
         self.A: Matrix of constraints (self.C x self.M)
         self.b: Vector of constraints (self.C x 1)
     """
+
     def __init__(self, N, d):
         PointConfiguration.__init__(self, N, d)
         self.C = 1
@@ -514,7 +512,8 @@ class ConstrainedConfiguration(PointConfiguration):
                         #  elif (angle < sum_angle):
                         #  if (print_out): print("non convex polygon found:",p,angle)
                         elif (angle > sum_angle):
-                            if (print_out): print("oops")
+                            if (print_out):
+                                print("oops")
         return convex_polygons
 
     def get_polygon_constraints(self,
@@ -529,7 +528,8 @@ class ConstrainedConfiguration(PointConfiguration):
         rows_A = []
         rows_b = []
         for m in range_polygones:
-            if (print_out): print('checking {}-polygones'.format(m))
+            if (print_out):
+                print('checking {}-polygones'.format(m))
             polygons = self.get_convex_polygons(m)
             row_A, row_b = self.get_polygon_constraints_m(polygons, print_out)
             rows_A.append(row_A)
@@ -541,16 +541,20 @@ class ConstrainedConfiguration(PointConfiguration):
     def get_angle_constraints_m(self, polygons_m, print_out=False):
         rows = []
         m = len(polygons_m[0])
-        # initialization to empty led to A being filled with first row of currently stored A!
+        # initialization to empty led to A being filled with first row of
+        # currently stored A!
         A = np.zeros((1, self.M))
         b = np.empty((1, ))
         for p in polygons_m:
             if len(p) < 4:
                 break
-            if (print_out): print('sum of angles for p {}'.format(p))
+            if (print_out):
+                print('sum of angles for p {}'.format(p))
             for j in p:
-                if (print_out): print('for corner {}'.format(p[0]))
-                k = m - 2  #for k in range(2, m-1): # how many angles to sum up.
+                if (print_out):
+                    print('for corner {}'.format(p[0]))
+                # for k in range(2, m-1): # how many angles to sum up.
+                k = m - 2
                 row = np.zeros(self.M)
                 # outer angle
                 for i in range(1, m - k):
@@ -612,20 +616,24 @@ class ConstrainedConfiguration(PointConfiguration):
         A_repeat = np.repeat(A.astype(bool), 3).reshape((1, -1))
         corners = self.corners.reshape((1, -1))
         corners_tiled = np.tile(corners, num_constraints)
-        if (print_out): print('shape of A {}'.format(A.shape))
+        if (print_out):
+            print('shape of A {}'.format(A.shape))
         if (print_out):
             print('chosen angles m={}:\n{}'.format(m, (corners_tiled)[A_repeat]
                                                    .reshape((-1, m * 3))))
-        if (print_out): print('{}-polygones: {}'.format(m, rows_A))
+        if (print_out):
+            print('{}-polygones: {}'.format(m, rows_A))
         self.A = A
         self.b = b
         return A, b
 
+
 class HeterogenousConfiguration(PointConfiguration):
+
     def __init__(self, N, d):
         PointConfiguration.__init__(self, N, d)
-        #TODO this is wrong! Is it really? 
-        self.m = int((self.N-1)*self.N/2.0)
+        #TODO this is wrong! Is it really?
+        self.m = int((self.N - 1) * self.N / 2.0)
         self.V = np.zeros((self.m, d))
         self.KE = np.zeros((self.m, self.m))
         self.C = np.zeros((self.m, self.N))
@@ -637,24 +645,34 @@ class HeterogenousConfiguration(PointConfiguration):
         start = 0
         for i in range(self.N):
             n = self.N - i - 1
-            self.C[start:start+n,i] = 1
-            self.C[start:start+n,i+1:] = -np.eye(n) 
+            self.C[start:start + n, i] = 1
+            self.C[start:start + n, i + 1:] = -np.eye(n)
             start = start + n
         self.V = np.dot(self.C, self.points)
         self.KE = np.dot(self.V, self.V.T)
         self.dm = np.linalg.norm(self.V, axis=1)
         for i in range(self.m):
             for j in range(self.m):
-                if i!=j:
-                    cos_inner_angle = np.dot(self.V[i,:],self.V[j,:]) / (np.linalg.norm(self.V[i,:])*np.linalg.norm(self.V[j,:]))
+                if i != j:
+                    cos_inner_angle = np.dot(self.V[i, :], self.V[
+                                             j, :]) / (np.linalg.norm(self.V[i, :]) * np.linalg.norm(self.V[j, :]))
                 else:
                     cos_inner_angle = 1.0
-                self.Om[i,j] = cos_inner_angle
+                self.Om[i, j] = cos_inner_angle
+
 
 def dm_from_edm(edm):
     dm = np.triu(edm)
-    dm = np.extract(dm>0, dm)
+    dm = np.extract(dm > 0, dm)
     return np.power(dm, 0.5)
+
+
+def create_from_points(points, PointClass):
+    new = PointClass(points.shape[0], points.shape[1])
+    new.points = points
+    new.init()
+    return new
+
 
 if __name__ == "__main__":
     print('running module point_configuration.py')
