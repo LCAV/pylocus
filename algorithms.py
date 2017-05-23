@@ -273,7 +273,7 @@ def reconstruct_srls(dm, points, plot=False, index=-1, weights=None):
     anchors = np.delete(points, index, axis=0)
     if weights is None:
         weights = np.ones(dm.shape)
-    srls = SRLS(anchors, dm, weights, plot)
+    srls = SRLS(anchors, weights, dm, plot)
     Y = points.copy()
     Y[index, :] = srls
     return Y
