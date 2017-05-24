@@ -89,5 +89,25 @@ def plot_cost_function(deltas, x_0, x_delta, fs, name):
     plt.legend()
     plt.title('$f_i$ around best {}+$\\Delta$'.format(name))
 
+def create_multispan_plots(tag_ids):
+    '''
+    Create 2 rows of plots, 1st row with {number} subplots, second row with one 
+    total plot.
+    '''
+    import matplotlib.gridspec as gridspec
+    fig = plt.figure(1)
+    gs = gridspec.GridSpec(2, len(tag_ids))
+    ax_list = [fig.add_subplot(this_gs) for this_gs in gs]
+    fig.set_size_inches(10, 10)
+    ax_total = plt.subplot(gs[1,:])
+    for count, tag_id in enumerate(tag_ids):
+        ax_list[count].legend(loc='best')
+        ax_list[count].set_title('Tag with Id {}'.format(tag_id))
+    ax_total.legend(loc='best')
+    ax_total.set_title('Total')
+    gs.tight_layout(fig, rect=[0, 0.03, 1, 0.95])
+    return fig, ax_list, ax_total
+
+
 if __name__ == "__main__":
     print('nothing happens when running this module.')
