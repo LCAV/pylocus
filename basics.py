@@ -121,3 +121,13 @@ def get_inner_angle(Pk, Pij):
     theta_kj = get_absolute_angle(Pk, Pij[1])
     theta = abs(theta_ki - theta_kj)
     return from_0_to_pi(theta)
+
+
+def assert_print(this_should_be_less_than, this=1e-10):
+    assert abs(this_should_be_less_than) < this, "abs({}) not smaller than {}".format(
+        this_should_be_less_than, this)
+
+
+def assert_all_print(this_should_be_less_than, this=1e-10):
+    assert (np.abs(this_should_be_less_than) < this).all(
+    ), "abs({}) not smaller than {}".format(this_should_be_less_than, this)

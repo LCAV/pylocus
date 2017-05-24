@@ -4,7 +4,7 @@
 import numpy as np
 import matplotlib.pyplot as plt
 from math import pi, floor, cos, sin
-from basics import rmse, eigendecomp
+from basics import rmse, eigendecomp, assert_print, assert_all_print
 
 
 def MDS(D, dim, method='simple', theta=True):
@@ -67,7 +67,6 @@ def procrustes(Y, X, scale=True):
     U, D, VT = np.linalg.svd(sigmaxy)
     #S = np.eye(D.shape[0])
     #this doesn't work and doesn't seem to be necessary! (why?)
-    #assert abs(abs(np.linalg.det(U)*np.linalg.det(VT.T))-1) < 1e-10
     #if (np.linalg.det(U)*np.linalg.det(VT.T) < 0):
     #print('switching')
     #S[-1,-1] = -1.0
@@ -131,10 +130,11 @@ def SRLS(anchors, weights, r2, printout=False):
     n = anchors.shape[0]
     d = anchors.shape[1]
     A = np.c_[-2 * anchors, np.ones((n, 1))]
-    A = np.diag(np.power(weights,0.5)).dot(A)
+    Sigma = np.diag(np.power(weights, 0.5))
+    A = Sigma.dot(A)
     ATA = np.dot(A.T, A)
     b = r2 - np.power(np.linalg.norm(anchors, axis=1), 2)
-    b = np.diag(np.power(weights,0.5)).dot(b)
+    b = Sigma.dot(b)
     D = np.zeros((d + 1, d + 1))
     D[:d, :d] = np.eye(d)
     if (printout):
@@ -158,7 +158,7 @@ def SRLS(anchors, weights, r2, printout=False):
     counter = 0
     I = I_orig
     while not found:
-        print('phi({})={}, phi({})={}'.format(I, phi(I), inf, phi(inf)))
+        #print('phi({})={}, phi({})={}'.format(I, phi(I), inf, phi(inf)))
         if phi(I) > 0 and phi(inf) < 0:
             found = True
         else:
@@ -186,14 +186,14 @@ def SRLS(anchors, weights, r2, printout=False):
     # Compute best estimate
     yhat = y_hat(lambda_opt)
 
-    assert (np.linalg.norm(yhat[:-1])**2 - yhat[-1]) < 1e-10
-    assert abs(phi(lambda_opt)) < 1e-10
+    # By definition, y = [x^T, alpha] and by constraints, alpha=norm(x)^2
+    assert_print(np.linalg.norm(yhat[:-1])**2 - yhat[-1], 1e-6)
+    assert_print(phi(lambda_opt), 1e-6)
     lhs = np.dot(A.T, A) + lambda_opt * D
     rhs = (np.dot(A.T, b).reshape((-1, 1)) - lambda_opt * f).reshape((-1,))
-    assert np.allclose(np.dot(lhs, yhat), rhs)
+    assert_all_print(np.dot(lhs, yhat) - rhs, 1e-6)
     eig = np.array(np.linalg.eigvals(ATA + lambda_opt * D))
     assert (eig >= 0).all()
-
     return yhat[:d]
 
 
@@ -252,6 +252,7 @@ def f(X_k, D, W):
 
 
 def reconstruct_mds(dm, points, plot=False, method='super', Om=''):
+    from point_configuration import edm_from_dm
     N = points.shape[0]
     d = points.shape[1]
     if method == 'super':
@@ -259,11 +260,7 @@ def reconstruct_mds(dm, points, plot=False, method='super', Om=''):
     elif method == 'mds':
         Xhat = MDS(dm, d, 'geometric', False).T
     else:
-        triu_idx = np.triu_indices(n=N, m=N, k=1)
-        # create edm from distances
-        edm = np.zeros((N, N))
-        edm[triu_idx[0], triu_idx[1]] = np.power(dm, 2)
-        edm = edm + edm.T
+        edm = edm_from_dm(dm, N)
         Xhat = MDS(edm, d, method, False).T
     Y, R, t, c = procrustes(points[:-1], Xhat, True)
     return Y
@@ -301,7 +298,7 @@ def reconstruct_weighted(D, W, X_0, X_hat, X_real, print_out=False,):
     edms = []
     points = []
     done = False
-    for counter in range(10):
+    for counter in range(50):
         # sweep
         for i in range(p.N):
             for coord in range(p.d):
@@ -324,7 +321,8 @@ def reconstruct_weighted(D, W, X_0, X_hat, X_real, print_out=False,):
             print('---real--- edm    ', np.linalg.norm(cd.edm - p.edm))
             print('---real--- points ', np.linalg.norm(X_k - p.points))
             print('cost function:', f(X_k, D, W))
-    print('did not converge after {} iterations')
+    print('did not converge after {} iterations'.format(counter))
+    return X_k, fs, edms, points
 
 if __name__ == "__main__":
     print('nothing happens when running this module.')

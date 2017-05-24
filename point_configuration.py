@@ -667,6 +667,15 @@ def dm_from_edm(edm):
     return np.power(dm, 0.5)
 
 
+def edm_from_dm(dm, N):
+    triu_idx = np.triu_indices(n=N, m=N, k=1)
+    # create edm from distances
+    edm = np.zeros((N, N))
+    edm[triu_idx[0], triu_idx[1]] = np.power(dm, 2)
+    edm = 0.5 * (edm + edm.T)
+    return edm
+
+
 def create_from_points(points, PointClass):
     new = PointClass(points.shape[0], points.shape[1])
     new.points = points
