@@ -165,7 +165,7 @@ def SRLS(anchors, weights, r2, printout=False):
             I -= I_orig
             counter += 1
         if counter > 100:
-            print('did not find a good left limit!')
+            print('SRLS: did not find a good left limit!')
             break
     lambda_opt = optimize.bisect(phi, I, inf)
 
@@ -263,6 +263,7 @@ def reconstruct_mds(edm, points, plot=False, method='super', Om=''):
     Y, R, t, c = procrustes(points[:-1], Xhat, True)
     return Y
 
+
 def reconstruct_srls(edm, points, plot=False, index=-1, weights=None):
     anchors = np.delete(points, index, axis=0)
     r2 = np.delete(edm[index,:],index)
@@ -273,6 +274,7 @@ def reconstruct_srls(edm, points, plot=False, index=-1, weights=None):
     Y = points.copy()
     Y[index, :] = srls
     return Y
+
 
 def reconstruct_weighted(edm, weights, X_0, X_hat, points, print_out=False,):
     from point_configuration import create_from_points, PointConfiguration
@@ -296,11 +298,18 @@ def reconstruct_weighted(edm, weights, X_0, X_hat, points, print_out=False,):
     err_edms = []
     err_points = []
     done = False
-    for counter in range(50):
+    for counter in range(20):
         # sweep
         for i in range(N):
             for coord in range(d):
                 delt = get_step_size(i, coord, X_k, edm, weights)
+                if len(delt) > 1:
+                    ftest = []
+                    for de in delt:
+                        X_ktest = X_k.copy()
+                        X_ktest[i, coord] += de
+                        ftest.append(f(X_ktest, edm, weights))
+                    delt = delt[ftest==min(ftest)]
                 X_k[i, coord] += delt
                 f_this = f(X_k, edm, weights)
                 fs.append(f_this)
@@ -308,10 +317,12 @@ def reconstruct_weighted(edm, weights, X_0, X_hat, points, print_out=False,):
                 cd.init()
                 err_edms.append(np.linalg.norm(cd.edm - edm))
                 err_points.append(np.linalg.norm(X_k - preal.points))
-                if len(fs) > 2 and abs(fs[-1] - fs[-2]) < 1e-10:
-                    if (print_out):
-                        print('converged after {} steps.'.format(counter))
-                    return X_k, fs, err_edms, err_points
+                if len(fs) > 2 and i==0 and coord == 0:
+                    if abs(fs[-1] - fs[-2]) < 1e-4:
+                        print('weighted mds: converged after {} sweeps.'.format(counter+1))
+                        return X_k, fs, err_edms, err_points
+                    else:
+                        print('err after sweep {}: {}'.format(counter+1,abs(fs[-1] - fs[-2])))
         if (print_out):
             print('======= step {} ======='.format(counter))
             print('---mds---- edm    ', np.linalg.norm(cd.edm - edm))
@@ -319,8 +330,9 @@ def reconstruct_weighted(edm, weights, X_0, X_hat, points, print_out=False,):
             print('---real--- edm    ', np.linalg.norm(cd.edm - preal.edm))
             print('---real--- points ', np.linalg.norm(X_k - preal.points))
             print('cost function:', f(X_k, edm, weights))
-    print('weighted mds did not converge after {} iterations'.format(counter+1))
+    print('weighted mds: did not converge after {} sweeps'.format(counter+1))
     return X_k, fs, err_edms, err_points
+
 
 if __name__ == "__main__":
     print('nothing happens when running this module.')
