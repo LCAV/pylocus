@@ -251,76 +251,74 @@ def f(X_k, D, W):
     return sum_
 
 
-def reconstruct_mds(dm, points, plot=False, method='super', Om=''):
-    from point_configuration import edm_from_dm
+def reconstruct_mds(edm, points, plot=False, method='super', Om=''):
+    from point_configuration import dm_from_edm
     N = points.shape[0]
     d = points.shape[1]
     if method == 'super':
+        dm = dm_from_edm(edm)
         Xhat, __ = super_mds(Om, dm, points[0, :], N, d)
-    elif method == 'mds':
-        Xhat = MDS(dm, d, 'geometric', False).T
     else:
-        edm = edm_from_dm(dm, N)
         Xhat = MDS(edm, d, method, False).T
     Y, R, t, c = procrustes(points[:-1], Xhat, True)
     return Y
 
-
-def reconstruct_srls(dm, points, plot=False, index=-1, weights=None):
+def reconstruct_srls(edm, points, plot=False, index=-1, weights=None):
     anchors = np.delete(points, index, axis=0)
+    r2 = np.delete(edm[index,:],index)
     if weights is None:
-        weights = np.ones(dm.shape)
-    srls = SRLS(anchors, weights, dm, plot)
+        weights = np.ones(edm.shape)
+    w = np.delete(weights[index,:],index)
+    srls = SRLS(anchors, w, r2, plot)
     Y = points.copy()
     Y[index, :] = srls
     return Y
 
-
-def reconstruct_weighted(D, W, X_0, X_hat, X_real, print_out=False,):
+def reconstruct_weighted(edm, weights, X_0, X_hat, points, print_out=False,):
     from point_configuration import create_from_points, PointConfiguration
     X_k = X_0.copy()
     N = X_k.shape[0]
     d = X_k.shape[1]
 
     # create reference object
-    p = create_from_points(X_real, PointConfiguration)
+    preal = create_from_points(points, PointConfiguration)
     # create optimization object
     cd = create_from_points(X_k, PointConfiguration)
 
     if print_out:
         print('=======initialization=======')
-        print('---mds---- edm    ', np.linalg.norm(cd.edm - D))
+        print('---mds---- edm    ', np.linalg.norm(cd.edm - edm))
         print('---mds---- points ', np.linalg.norm(X_k - X_hat))
-        print('---real--- edm    ', np.linalg.norm(cd.edm - p.edm))
-        print('---real--- points ', np.linalg.norm(X_k - p.points))
-        print('cost function:', f(X_k, D, W))
+        print('---real--- edm    ', np.linalg.norm(cd.edm - preal.edm))
+        print('---real--- points ', np.linalg.norm(X_k - preal.points))
+        print('cost function:', f(X_k, edm, weights))
     fs = []
     edms = []
     points = []
     done = False
     for counter in range(50):
         # sweep
-        for i in range(p.N):
-            for coord in range(p.d):
-                delt = get_step_size(i, coord, X_k, D, W)
+        for i in range(N):
+            for coord in range(d):
+                delt = get_step_size(i, coord, X_k, edm, weights)
                 X_k[i, coord] += delt
-                f_this = f(X_k, D, W)
+                f_this = f(X_k, edm, weights)
                 fs.append(f_this)
                 cd.points = X_k
                 cd.init()
-                edms.append(np.linalg.norm(cd.edm - D))
-                points.append(np.linalg.norm(X_k - p.points))
+                edms.append(np.linalg.norm(cd.edm - edm))
+                points.append(np.linalg.norm(X_k - preal.points))
                 if len(fs) > 2 and abs(fs[-1] - fs[-2]) < 1e-10:
                     if (print_out):
                         print('converged after {} steps.'.format(counter))
                     return X_k, fs, edms, points
         if (print_out):
             print('======= step {} ======='.format(counter))
-            print('---mds---- edm    ', np.linalg.norm(cd.edm - D))
+            print('---mds---- edm    ', np.linalg.norm(cd.edm - edm))
             print('---mds---- points ', np.linalg.norm(X_k - X_hat))
-            print('---real--- edm    ', np.linalg.norm(cd.edm - p.edm))
-            print('---real--- points ', np.linalg.norm(X_k - p.points))
-            print('cost function:', f(X_k, D, W))
+            print('---real--- edm    ', np.linalg.norm(cd.edm - preal.edm))
+            print('---real--- points ', np.linalg.norm(X_k - preal.points))
+            print('cost function:', f(X_k, edm, weights))
     print('did not converge after {} iterations'.format(counter))
     return X_k, fs, edms, points
 
