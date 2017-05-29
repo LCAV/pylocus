@@ -293,8 +293,8 @@ def reconstruct_weighted(edm, weights, X_0, X_hat, points, print_out=False,):
         print('---real--- points ', np.linalg.norm(X_k - preal.points))
         print('cost function:', f(X_k, edm, weights))
     fs = []
-    edms = []
-    points = []
+    err_edms = []
+    err_points = []
     done = False
     for counter in range(50):
         # sweep
@@ -306,12 +306,12 @@ def reconstruct_weighted(edm, weights, X_0, X_hat, points, print_out=False,):
                 fs.append(f_this)
                 cd.points = X_k
                 cd.init()
-                edms.append(np.linalg.norm(cd.edm - edm))
-                points.append(np.linalg.norm(X_k - preal.points))
+                err_edms.append(np.linalg.norm(cd.edm - edm))
+                err_points.append(np.linalg.norm(X_k - preal.points))
                 if len(fs) > 2 and abs(fs[-1] - fs[-2]) < 1e-10:
                     if (print_out):
                         print('converged after {} steps.'.format(counter))
-                    return X_k, fs, edms, points
+                    return X_k, fs, err_edms, err_points
         if (print_out):
             print('======= step {} ======='.format(counter))
             print('---mds---- edm    ', np.linalg.norm(cd.edm - edm))
@@ -319,8 +319,8 @@ def reconstruct_weighted(edm, weights, X_0, X_hat, points, print_out=False,):
             print('---real--- edm    ', np.linalg.norm(cd.edm - preal.edm))
             print('---real--- points ', np.linalg.norm(X_k - preal.points))
             print('cost function:', f(X_k, edm, weights))
-    print('did not converge after {} iterations'.format(counter))
-    return X_k, fs, edms, points
+    print('weighted mds did not converge after {} iterations'.format(counter+1))
+    return X_k, fs, err_edms, err_points
 
 if __name__ == "__main__":
     print('nothing happens when running this module.')
