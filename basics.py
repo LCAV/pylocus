@@ -131,3 +131,9 @@ def assert_print(this_should_be_less_than, this=1e-10):
 def assert_all_print(this_should_be_less_than, this=1e-10):
     assert (np.abs(this_should_be_less_than) < this).all(
     ), "abs({}) not smaller than {}".format(this_should_be_less_than, this)
+
+
+def divide_where_nonzero(divide_this, by_this):
+    result = np.zeros(divide_this.shape)
+    result[by_this!=0] = divide_this[by_this!=0]/by_this[by_this!=0]
+    return result

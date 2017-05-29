@@ -89,6 +89,7 @@ def plot_cost_function(deltas, x_0, x_delta, fs, name):
     plt.legend()
     plt.title('$f_i$ around best {}+$\\Delta$'.format(name))
 
+
 def create_multispan_plots(tag_ids):
     '''
     Create 2 rows of plots, 1st row with {number} subplots, second row with one 
@@ -101,13 +102,17 @@ def create_multispan_plots(tag_ids):
     fig.set_size_inches(10, 10)
     ax_total = plt.subplot(gs[1,:])
     for count, tag_id in enumerate(tag_ids):
-        ax_list[count].legend(loc='best')
         ax_list[count].set_title('Tag with Id {}'.format(tag_id))
-    ax_total.legend(loc='best')
     ax_total.set_title('Total')
     gs.tight_layout(fig, rect=[0, 0.03, 1, 0.95])
     return fig, ax_list, ax_total
 
+
+def plot_matrix(matrix, title='matrix'):
+    plt.matshow(matrix)
+    plt.title(title)
+    plt.colorbar()
+    plt.show()
 
 if __name__ == "__main__":
     print('nothing happens when running this module.')
