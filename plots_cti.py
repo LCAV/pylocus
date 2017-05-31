@@ -83,13 +83,14 @@ def plot_point_sets_3d(point_sets, names, title='', display_lines = False):
             y = X[pairs, 1]
             z = X[pairs, 2]
             if first:
-                # ax.plot(x, y, z, color=COLORS[counter], linestyle=LINESTYLES[
-                #         counter], label=names[counter])
+                if display_lines:
+                    ax.plot(x, y, z, color=COLORS[counter], linestyle=LINESTYLES[
+                            counter], label=names[counter])
                 first = False
             else:
-                bed = 1
-                # ax.plot(x, y, z, color=COLORS[counter],
-                #         linestyle=LINESTYLES[counter])
+                if display_lines:
+                    ax.plot(x, y, z, color=COLORS[counter],
+                            linestyle=LINESTYLES[counter])
         # plot tag position
         ax.plot([X[-1, 0]], [X[-1, 1]], [X[-1, 2]],marker=MARKERS[counter], color=COLORS[counter + 1], label=names[counter], linewidth=2.0)
 
