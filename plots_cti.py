@@ -5,13 +5,13 @@ import matplotlib.pyplot as plt
 import numpy as np
 
 LINESTYLES = ['-', ':', '--', '-.', '-.', '-.', '-.', '-.']
-MARKERS = [".", "o", "v", ",", "^", ">", "1",
+MARKERS = [".", "o", "v", "+", "^", ">", "1",
            "2", "3", "4", "8", "s", "p", "*", "h"]
 COLORS = ["black", "blue", "fuchsia", "gray", "aqua", "green", "lime",
           "maroon", "navy", "olive", "purple", "red", "silver", "teal", "yellow"]
 
 
-def plot_point_sets(point_sets, title='', size=[10, 10], filename='', names=None):
+def plot_point_sets(point_sets, title='', size=[10, 10], filename='', names=None, display_lines = False):
     import itertools
     if names is None:
         names = ['Original']
@@ -26,22 +26,26 @@ def plot_point_sets(point_sets, title='', size=[10, 10], filename='', names=None
     ymin = np.min(point_sets[0][:, 1]) - delta
     xmax = np.max(point_sets[0][:, 0]) + delta
     ymax = np.max(point_sets[0][:, 1]) + delta
-    plt.axis((xmin, xmax, ymin, ymax))
+    plt.axis((xmin, xmax*2.5, ymin, ymax))
 
     legend = []
     for p, points in enumerate(point_sets):
         N = points.shape[0]
         if p == 0:
             for i in range(N):
+                plt.plot(points[i, 0], points[i, 1],'.k') # marker = MARKERS[i],label=names[p]
                 ax.annotate('%s' % i, xy=(
                     points[i, 0], points[i, 1]), textcoords='data', size=20, weight='bold')
-        for pair in itertools.combinations(range(N), 2):
-            plt.plot([points[pair[0], 0], points[pair[1], 0]], [points[pair[0], 1],
+        #plot tag position
+        plt.plot(points[-1, 0], points[-1, 1], marker = MARKERS[p],color=COLORS[p+1],label=names[p],linewidth=2.0)
+        if display_lines:
+            for pair in itertools.combinations(range(N), 2):
+                plt.plot([points[pair[0], 0], points[pair[1], 0]], [points[pair[0], 1],
 
-                                                                points[pair[1], 1]], linestyle=LINESTYLES[p], color=COLORS[p], linewidth=2.0)
+                                                                    points[pair[1], 1]], linestyle=LINESTYLES[p], color=COLORS[p], linewidth=2.0)
         # Plot with label.
-        plt.plot([points[0, 0], points[1, 0]], [points[0, 1], points[
-                 1, 1]], linestyle=LINESTYLES[p], color=COLORS[p], linewidth=2.0, label=names[p])
+        # plt.plot([points[0, 0], points[1, 0]], [points[0, 1], points[
+        #          1, 1]], linestyle=LINESTYLES[p], color=COLORS[p], linewidth=2.0, label=names[p])
     f.set_size_inches(size)
     if title == '':
         plt.title('N = %r' % N)
@@ -53,11 +57,24 @@ def plot_point_sets(point_sets, title='', size=[10, 10], filename='', names=None
     plt.show()
 
 
-def plot_point_sets_3d(point_sets, names, title=''):
+def plot_point_sets_3d(point_sets, names, title='', display_lines = False):
+
     from mpl_toolkits.mplot3d import Axes3D
     import itertools
     fig = plt.figure()
     ax = fig.gca(projection='3d')
+
+    # Set range automatically
+    delta = 1.0
+    xmin = np.min(point_sets[0][:, 0]) - delta
+    ymin = np.min(point_sets[0][:, 1]) - delta
+    zmin = np.min(point_sets[0][:, 2]) - delta
+    xmax = np.max(point_sets[0][:, 0]) + delta
+    ymax = np.max(point_sets[0][:, 1]) + delta
+    zmax = np.max(point_sets[0][:, 2]) + delta
+    ax.set_xlim(xmin, xmax)
+    ax.set_ylim(ymin, ymax)
+    ax.set_zlim(zmin, zmax)
     for counter, X in enumerate(point_sets):
         N = X.shape[0]
         first = True
@@ -66,12 +83,16 @@ def plot_point_sets_3d(point_sets, names, title=''):
             y = X[pairs, 1]
             z = X[pairs, 2]
             if first:
-                ax.plot(x, y, z, color=COLORS[counter], linestyle=LINESTYLES[
-                        counter], label=names[counter])
+                # ax.plot(x, y, z, color=COLORS[counter], linestyle=LINESTYLES[
+                #         counter], label=names[counter])
                 first = False
             else:
-                ax.plot(x, y, z, color=COLORS[counter],
-                        linestyle=LINESTYLES[counter])
+                bed = 1
+                # ax.plot(x, y, z, color=COLORS[counter],
+                #         linestyle=LINESTYLES[counter])
+        # plot tag position
+        ax.plot([X[-1, 0]], [X[-1, 1]], [X[-1, 2]],marker=MARKERS[counter], color=COLORS[counter + 1], label=names[counter], linewidth=2.0)
+
     ax.set_title(title)
     ax.legend()
     plt.show()
