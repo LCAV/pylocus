@@ -116,7 +116,7 @@ def SRLS(anchors, weights, r2, printout=False):
         x: estimated position of point x.
     '''
     def y_hat(_lambda):
-        lhs = np.dot(A.T, A) + _lambda * D
+        lhs = ATA + _lambda * D
         rhs = (np.dot(A.T, b).reshape((-1, 1)) - _lambda * f).reshape((-1,))
         return np.linalg.solve(lhs, rhs)
 
@@ -143,32 +143,31 @@ def SRLS(anchors, weights, r2, printout=False):
         print('rank:', np.linalg.matrix_rank(A))
         print('ATA:', np.linalg.eigvals(ATA))
         print('D:', D)
+        print('condition number:',np.linalg.cond(ATA))
     f = np.c_[np.zeros((1, d)), -0.5].T
 
     # Compute lower limit for lambda (s.t. AT*A+lambda*D psd)
-    B12 = np.linalg.inv(sqrtm(ATA))
+    reg = 1
+    sqrtm_ATA = sqrtm(ATA + reg*np.eye(ATA.shape[0]))
+    B12 = np.linalg.inv(sqrtm_ATA)
     tmp = np.dot(B12, np.dot(D, B12))
     eig = np.linalg.eigvals(tmp)
 
-    # TODO: what is wrong here? sometimes I_orig is not of the correct sign?
     eps = 0.01
-    I_orig = -1.0 / eig[0] + eps
+    if eig[0] == reg:
+        print('eigenvalue equals reg.')
+        I_orig = -1e5
+    elif eig[0] > 1e-10:
+        I_orig = -1.0 / eig[0] + eps
+    else:
+        print('smallest eigenvalue is zero')
+        I_orig = -1e5
     inf = 1e5
-    found = False
-    counter = 0
-    I = I_orig
-    while not found:
-        #print('phi({})={}, phi({})={}'.format(I, phi(I), inf, phi(inf)))
-        if phi(I) > 0 and phi(inf) < 0:
-            found = True
-        else:
-            I -= I_orig
-            counter += 1
-        if counter > 100:
-            print('SRLS: did not find a good left limit!')
-            break
-    lambda_opt = optimize.bisect(phi, I, inf)
-
+    try:
+        lambda_opt = optimize.bisect(phi, I_orig, inf)
+    except:
+        print('Bisect failed. Trying Newton...')
+        lambda_opt = optimize.newton(phi, I_orig)
     if (printout):
         print('I', I)
         print('phi I', phi(I))
@@ -193,7 +192,7 @@ def SRLS(anchors, weights, r2, printout=False):
     rhs = (np.dot(A.T, b).reshape((-1, 1)) - lambda_opt * f).reshape((-1,))
     assert_all_print(np.dot(lhs, yhat) - rhs, 1e-6)
     eig = np.array(np.linalg.eigvals(ATA + lambda_opt * D))
-    assert (eig >= 0).all()
+    #assert (eig >= 0).all(), 'not all eigenvalues positive:{}'.format(eig)
     return yhat[:d]
 
 
@@ -266,10 +265,19 @@ def reconstruct_mds(edm, points, plot=False, method='super', Om=''):
 
 def reconstruct_srls(edm, points, plot=False, index=-1, weights=None):
     anchors = np.delete(points, index, axis=0)
+
     r2 = np.delete(edm[index,:],index)
     if weights is None:
         weights = np.ones(edm.shape)
     w = np.delete(weights[index,:],index)
+
+    # delete anchors where weight is zero to avoid ill-conditioning
+    missing_anchors = np.where(w==0.0)
+    w = np.delete(w, missing_anchors)
+    r2 = np.delete(r2, missing_anchors)
+    other = np.delete(range(edm.shape[0]), missing_anchors)
+    anchors = np.delete(anchors, missing_anchors, axis=0)
+
     srls = SRLS(anchors, w, r2, plot)
     Y = points.copy()
     Y[index, :] = srls
