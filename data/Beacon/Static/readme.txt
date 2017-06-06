@@ -36,3 +36,6 @@ The column of csv files refers to:
 	The range is the distance in meters.
 	TxPower and RSSI are in dbm.
 	The range has been computed using the formula: range = 10^((TxPower-RSSI)/20)
+	
+For more information about the beacons and the scene we used, read the short report on the Ubiment switch drive:
+    Reports/Beacon/Beacon.docx
