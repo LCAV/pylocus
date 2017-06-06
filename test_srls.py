@@ -19,6 +19,7 @@ class TestSRLS(unittest.TestCase):
         for i in range(100):
             self.setUp()
             self.test_zero_weights(-1, 0.1)
+            self.test_zero_weights(-1, 0.0)
 
     def test_zero_weights(self, index=-1, noise=0.1):
         from basics import create_noisy_edm
@@ -49,6 +50,10 @@ class TestSRLS(unittest.TestCase):
                         left_distances, :] - missing_anchors) < 1e-10, 'anchors moved.')
         self.assertTrue(np.linalg.norm(
             missing_distances[index, :] - missing_anchors[index, :]) < 1e-10, 'point moved.')
+        if noise == 0.0:
+            print('error',np.linalg.norm(missing_distances - self.pts.points))
+            self.assertTrue(np.linalg.norm(
+                missing_distances - self.pts.points) < 1e-10, 'error')
 
 if __name__ == "__main__":
     logging.basicConfig(stream=sys.stderr)

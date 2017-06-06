@@ -145,6 +145,6 @@ def create_noisy_edm(edm, noise):
     '''
     N = edm.shape[0]
     edm_noisy = edm + np.random.normal(scale=noise, size=edm.shape)
-    edm_noisy = 0.5*edm_noisy + edm_noisy.T
+    edm_noisy = 0.5 * (edm_noisy + edm_noisy.T)
     edm_noisy[range(N),range(N)] = 0.0
     return edm_noisy
