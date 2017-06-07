@@ -135,7 +135,7 @@ def assert_all_print(this_should_be_less_than, this=1e-10):
 
 def divide_where_nonzero(divide_this, by_this):
     result = np.zeros(divide_this.shape)
-    result[by_this!=0] = divide_this[by_this!=0]/by_this[by_this!=0]
+    result[by_this != 0] = divide_this[by_this != 0] / by_this[by_this != 0]
     return result
 
 
@@ -146,5 +146,5 @@ def create_noisy_edm(edm, noise):
     N = edm.shape[0]
     edm_noisy = edm + np.random.normal(scale=noise, size=edm.shape)
     edm_noisy = 0.5 * (edm_noisy + edm_noisy.T)
-    edm_noisy[range(N),range(N)] = 0.0
+    edm_noisy[range(N), range(N)] = 0.0
     return edm_noisy

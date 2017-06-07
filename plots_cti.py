@@ -11,7 +11,7 @@ COLORS = ["black", "blue", "fuchsia", "gray", "aqua", "green", "lime",
           "maroon", "navy", "olive", "purple", "red", "silver", "teal", "yellow"]
 
 
-def plot_point_sets(point_sets, title='', size=[10, 10], filename='', names=None, display_lines = False):
+def plot_point_sets(point_sets, title='', size=[10, 10], filename='', names=None, display_lines=False):
     import itertools
     if names is None:
         names = ['Original']
@@ -26,18 +26,20 @@ def plot_point_sets(point_sets, title='', size=[10, 10], filename='', names=None
     ymin = np.min(point_sets[0][:, 1]) - delta
     xmax = np.max(point_sets[0][:, 0]) + delta
     ymax = np.max(point_sets[0][:, 1]) + delta
-    plt.axis((xmin, xmax*2.5, ymin, ymax))
+    plt.axis((xmin, xmax * 2.5, ymin, ymax))
 
     legend = []
     for p, points in enumerate(point_sets):
         N = points.shape[0]
         if p == 0:
             for i in range(N):
-                plt.plot(points[i, 0], points[i, 1],'.k') # marker = MARKERS[i],label=names[p]
+                # marker = MARKERS[i],label=names[p]
+                plt.plot(points[i, 0], points[i, 1], '.k')
                 ax.annotate('%s' % i, xy=(
                     points[i, 0], points[i, 1]), textcoords='data', size=20, weight='bold')
         #plot tag position
-        plt.plot(points[-1, 0], points[-1, 1], marker = MARKERS[p],color=COLORS[p+1],label=names[p],linewidth=2.0)
+        plt.plot(points[-1, 0], points[-1, 1], marker=MARKERS[p],
+                 color=COLORS[p + 1], label=names[p], linewidth=2.0)
         if display_lines:
             for pair in itertools.combinations(range(N), 2):
                 plt.plot([points[pair[0], 0], points[pair[1], 0]], [points[pair[0], 1],
@@ -45,7 +47,8 @@ def plot_point_sets(point_sets, title='', size=[10, 10], filename='', names=None
                                                                     points[pair[1], 1]], linestyle=LINESTYLES[p], color=COLORS[p], linewidth=2.0)
         # Plot with label.
         # plt.plot([points[0, 0], points[1, 0]], [points[0, 1], points[
-        #          1, 1]], linestyle=LINESTYLES[p], color=COLORS[p], linewidth=2.0, label=names[p])
+        # 1, 1]], linestyle=LINESTYLES[p], color=COLORS[p], linewidth=2.0,
+        # label=names[p])
     f.set_size_inches(size)
     if title == '':
         plt.title('N = %r' % N)
@@ -57,7 +60,7 @@ def plot_point_sets(point_sets, title='', size=[10, 10], filename='', names=None
     plt.show()
 
 
-def plot_point_sets_3d(point_sets, names, title='', display_lines = False):
+def plot_point_sets_3d(point_sets, names, title='', display_lines=False):
 
     from mpl_toolkits.mplot3d import Axes3D
     import itertools
@@ -92,7 +95,8 @@ def plot_point_sets_3d(point_sets, names, title='', display_lines = False):
                     ax.plot(x, y, z, color=COLORS[counter],
                             linestyle=LINESTYLES[counter])
         # plot tag position
-        ax.plot([X[-1, 0]], [X[-1, 1]], [X[-1, 2]],marker=MARKERS[counter], color=COLORS[counter + 1], label=names[counter], linewidth=2.0)
+        ax.plot([X[-1, 0]], [X[-1, 1]], [X[-1, 2]], marker=MARKERS[counter],
+                color=COLORS[counter + 1], label=names[counter], linewidth=2.0)
 
     ax.set_title(title)
     ax.legend()
@@ -122,7 +126,7 @@ def create_multispan_plots(tag_ids):
     gs = gridspec.GridSpec(2, len(tag_ids))
     ax_list = [fig.add_subplot(this_gs) for this_gs in gs]
     fig.set_size_inches(10, 10)
-    ax_total = plt.subplot(gs[1,:])
+    ax_total = plt.subplot(gs[1, :])
     for count, tag_id in enumerate(tag_ids):
         ax_list[count].set_title('Tag with Id {}'.format(tag_id))
     ax_total.set_title('Total')
@@ -132,7 +136,7 @@ def create_multispan_plots(tag_ids):
 
 def plot_matrix(matrix, title='matrix'):
     plt.matshow(matrix)
-    plt.title(title)
+    plt.title(title, y=1.1)
     plt.colorbar()
     plt.show()
 
