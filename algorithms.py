@@ -143,12 +143,12 @@ def SRLS(anchors, weights, r2, printout=False):
         print('rank:', np.linalg.matrix_rank(A))
         print('ATA:', np.linalg.eigvals(ATA))
         print('D:', D)
-        print('condition number:',np.linalg.cond(ATA))
+        print('condition number:', np.linalg.cond(ATA))
     f = np.c_[np.zeros((1, d)), -0.5].T
 
     # Compute lower limit for lambda (s.t. AT*A+lambda*D psd)
     reg = 1
-    sqrtm_ATA = sqrtm(ATA + reg*np.eye(ATA.shape[0]))
+    sqrtm_ATA = sqrtm(ATA + reg * np.eye(ATA.shape[0]))
     B12 = np.linalg.inv(sqrtm_ATA)
     tmp = np.dot(B12, np.dot(D, B12))
     eig = np.linalg.eigvals(tmp)
@@ -207,7 +207,7 @@ def get_step_size(i, coord, X_k, D, W, print_out=False):
         N = D.shape[0]
         other = np.delete(np.arange(X_k.shape[1]), coord)
         a0 = a1 = a2 = a3 = 0
-        for j in range(N):
+        for j in np.where(W[i, :] != 0.0)[0]:
             beta = X_k[i, coord] - X_k[j, coord]
             alpha = np.linalg.norm(X_k[i, :] - X_k[j, :])**2 - D[i, j]
             a0 += 4 * W[i, j] * alpha * beta
@@ -250,10 +250,48 @@ def f(X_k, D, W):
     return sum_
 
 
-def reconstruct_mds(edm, points, plot=False, method='super', Om=''):
+def alternating_completion(edm, rank, mask, print_out=False, niter=50, tol=1e-6):
+    from basics import low_rank_approximation
+    N = edm.shape[0]
+    edm_complete = edm.copy()
+    edm_complete[mask == 0] = np.mean(edm)
+    err = np.linalg.norm(edm_complete - edm)
+    if print_out:
+        print('iteration \t edm difference')
+        print('0 \t {}'.format(err))
+    errs = [err]
+    for i in range(niter):
+        # impose matrix rank
+        edm_complete = low_rank_approximation(edm_complete, rank)
+
+        # impose known entries
+        edm_complete[mask] = edm[mask]
+
+        # impose matrix structure
+        edm_complete[range(N), range(N)] = 0.0
+        edm_complete[edm_complete < 0] = 0.0
+        edm_complete = 0.5 * (edm_complete + edm_complete.T)
+
+        err = np.linalg.norm(edm_complete - edm)
+        errs.append(err)
+        if print_out:
+            print('{} \t {}'.format(i + 1, err))
+        if abs(errs[-2] - errs[-1]) < tol:
+            break
+    return edm_complete, errs
+
+
+def reconstruct_mds(edm, points, plot=False, method='super', Om='', mask=None):
     from point_configuration import dm_from_edm
     N = points.shape[0]
     d = points.shape[1]
+    if mask is not None:
+        from opt_space import opt_space
+        edm_missing = np.multiply(edm, mask)
+        X, S, Y, __ = OptSpace(edm_missing, r=d, niter=500,
+                               tol=1e-6, print_out=False)
+        edm = X.dot(S.dot(Y.T))
+        edm[range(N), range(N)] = 0.0
     if method == 'super':
         dm = dm_from_edm(edm)
         Xhat, __ = super_mds(Om, dm, points[0, :], N, d)
@@ -266,13 +304,13 @@ def reconstruct_mds(edm, points, plot=False, method='super', Om=''):
 def reconstruct_srls(edm, points, plot=False, index=-1, weights=None):
     anchors = np.delete(points, index, axis=0)
 
-    r2 = np.delete(edm[index,:],index)
+    r2 = np.delete(edm[index, :], index)
     if weights is None:
         weights = np.ones(edm.shape)
-    w = np.delete(weights[index,:],index)
+    w = np.delete(weights[index, :], index)
 
     # delete anchors where weight is zero to avoid ill-conditioning
-    missing_anchors = np.where(w==0.0)
+    missing_anchors = np.where(w == 0.0)
     w = np.delete(w, missing_anchors)
     r2 = np.delete(r2, missing_anchors)
     other = np.delete(range(edm.shape[0]), missing_anchors)
@@ -306,39 +344,62 @@ def reconstruct_weighted(edm, weights, X_0, X_hat, points, print_out=False,):
     err_edms = []
     err_points = []
     done = False
-    for counter in range(20):
+
+    coord_n_it = 10
+
+    coordinates_converged = np.ones(N) * coord_n_it
+    for sweep_counter in range(100):
         # sweep
-        for i in range(N):
-            for coord in range(d):
-                delt = get_step_size(i, coord, X_k, edm, weights)
-                if len(delt) > 1:
-                    ftest = []
-                    for de in delt:
-                        X_ktest = X_k.copy()
-                        X_ktest[i, coord] += de
-                        ftest.append(f(X_ktest, edm, weights))
-                    delt = delt[ftest==min(ftest)]
-                X_k[i, coord] += delt
-                f_this = f(X_k, edm, weights)
-                fs.append(f_this)
-                cd.points = X_k
-                cd.init()
-                err_edms.append(np.linalg.norm(cd.edm - edm))
-                err_points.append(np.linalg.norm(X_k - preal.points))
-                if len(fs) > 2 and i==0 and coord == 0:
-                    if abs(fs[-1] - fs[-2]) < 1e-4:
-                        print('weighted mds: converged after {} sweeps.'.format(counter+1))
-                        return X_k, fs, err_edms, err_points
-                    else:
-                        print('err after sweep {}: {}'.format(counter+1,abs(fs[-1] - fs[-2])))
+        for i in np.where(coordinates_converged > 1)[0]:
+            #for i in range(N):
+            print('i', i)
+            coord_counter = 0
+            while coord_counter < coord_n_it:
+                coord_counter += 1
+                for coord in range(d):
+                    delt = get_step_size(i, coord, X_k, edm, weights)
+                    if len(delt) > 1:
+                        ftest = []
+                        for de in delt:
+                            X_ktest = X_k.copy()
+                            X_ktest[i, coord] += de
+                            ftest.append(f(X_ktest, edm, weights))
+                        delt = delt[ftest == min(ftest)]
+                    X_k[i, coord] += delt
+                    f_this = f(X_k, edm, weights)
+                    fs.append(f_this)
+                    cd.points = X_k
+                    cd.init()
+                    err_edms.append(np.linalg.norm(cd.edm - edm))
+                    err_points.append(np.linalg.norm(X_k - preal.points))
+                    if len(fs) > 2:
+                        if abs(fs[-1] - fs[-2]) < 1e-3:
+                            print('weighted mds: coordinate converged after {} loops.'.format(
+                                coord_counter))
+                            if coord_counter == 1:
+                                if coord_counter > coordinates_converged[i]:
+                                    print(
+                                        '============= coordinate converged in more than before!!! ============')
+                            coordinates_converged[i] = coord_counter
+                            coord_counter = coord_n_it
+                            break
+                        else:
+                            pass
+                            #print('error:',abs(fs[-1] - fs[-2]))
+        if (coordinates_converged == 1).all():
+            print('weighted mds: all coordinates converged after {} sweeps.'.format(
+                sweep_counter))
+            return X_k, fs, err_edms, err_points
+        else:
+            print('weighted mds: not yet converged:', coordinates_converged)
         if (print_out):
-            print('======= step {} ======='.format(counter))
+            print('======= step {} ======='.format(sweep_counter))
             print('---mds---- edm    ', np.linalg.norm(cd.edm - edm))
             print('---mds---- points ', np.linalg.norm(X_k - X_hat))
             print('---real--- edm    ', np.linalg.norm(cd.edm - preal.edm))
             print('---real--- points ', np.linalg.norm(X_k - preal.points))
             print('cost function:', f(X_k, edm, weights))
-    print('weighted mds: did not converge after {} sweeps'.format(counter+1))
+    print('weighted mds: did not converge after {} sweeps'.format(sweep_counter + 1))
     return X_k, fs, err_edms, err_points
 
 
