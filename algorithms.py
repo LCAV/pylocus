@@ -6,7 +6,6 @@ import matplotlib.pyplot as plt
 from math import pi, floor, cos, sin
 from basics import rmse, eigendecomp, assert_print, assert_all_print
 
-
 def MDS(D, dim, method='simple', theta=True):
     N = D.shape[0]
     def theta_from_eigendecomp(factor, u):
@@ -288,8 +287,8 @@ def reconstruct_mds(edm, points, plot=False, method='super', Om='', mask=None):
     if mask is not None:
         from opt_space import opt_space
         edm_missing = np.multiply(edm, mask)
-        X, S, Y, __ = OptSpace(edm_missing, r=d, niter=500,
-                               tol=1e-6, print_out=False)
+        X, S, Y, __ = opt_space(edm_missing, r=d, niter=500,
+                                tol=1e-6, print_out=False)
         edm = X.dot(S.dot(Y.T))
         edm[range(N), range(N)] = 0.0
     if method == 'super':
