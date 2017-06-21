@@ -261,9 +261,8 @@ class PointConfiguration:
         return theta_ik, theta_jk
 
     def create_edm(self):
-        rows, cols = np.indices((self.N, self.N))
-        self.edm = np.sum(
-            (self.points[rows, :] - self.points[cols, :])**2, axis=2)
+        from basics import get_edm
+        self.edm = get_edm(self.points)
 
     def create_abs_angles(self):
         from basics import get_absolute_angle

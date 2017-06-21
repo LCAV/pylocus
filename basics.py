@@ -144,7 +144,13 @@ def create_noisy_edm(edm, noise):
     Returns noisy, yet symmetric and 0-diagonal, version of edm.
     '''
     N = edm.shape[0]
-    edm_noisy = edm + np.random.normal(scale=noise, size=edm.shape)
+    edm_noisy = edm + np.random.normal(scale=noise*2.0, size=edm.shape)
     edm_noisy = 0.5 * (edm_noisy + edm_noisy.T)
     edm_noisy[range(N), range(N)] = 0.0
     return edm_noisy
+
+def get_edm(X):
+    N = X.shape[0]
+    rows, cols = np.indices((N, N))
+    edm = np.sum((X[rows, :] - X[cols, :])**2, axis=2)
+    return edm
