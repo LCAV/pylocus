@@ -45,7 +45,9 @@ def reconstruct_dwmds(edm_measured, X, W, r=None, n=None, X_bar=None, max_iter=1
     costs = []
     # don't have to ignore i=j, because W[i,i] is zero.
     a = np.sum(W[:n, :n], axis=1).flatten() + 2 * \
-        np.sum(W[:n, n:], axis=1).flatten() + r.flatten()
+        np.sum(W[:n, n:], axis=1).flatten()
+    if r is not None:
+        a += r.flatten()
     for k in range(max_iter):
         S = 0
         for i in range(n):
@@ -57,6 +59,7 @@ def reconstruct_dwmds(edm_measured, X, W, r=None, n=None, X_bar=None, max_iter=1
             else:
                 X[i] = 1 / a[i] * X.T.dot(bi).flatten()
                 Xi = get_Si(i, edm_est, edm_measured, W)
+                Si = get_Si(i, edm_est, edm_measured, W)
             S += Si
         costs.append(S)
         if k > 1 and abs(costs[-1] - costs[-2]) < tol:
