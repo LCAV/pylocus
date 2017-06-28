@@ -4,6 +4,7 @@ import numpy as np
 
 def reconstruct_dwmds(edm_measured, X, W, r=None, n=None, X_bar=None, max_iter=100, tol=1e-10):
     from basics import get_edm
+    
 
     def get_b(i, edm_est, W, edm_measured, n):
         b = np.zeros((edm_est.shape[0], 1))
@@ -63,7 +64,7 @@ def reconstruct_dwmds(edm_measured, X, W, r=None, n=None, X_bar=None, max_iter=1
             S += Si
         costs.append(S)
         if k > 1 and abs(costs[-1] - costs[-2]) < tol:
-            print('converged after', k)
+            #print('converged after', k)
             break
     return X, costs
 

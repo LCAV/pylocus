@@ -55,9 +55,9 @@ class PointConfiguration:
         self.create_abs_angles()
         self.create_theta()
 
-    def add_noise(self, noise, mode='points'):
-        if mode == 'points':
-            self.points += np.random.normal(0, noise, (self.N, self.d))
+    def add_noise(self, noise):
+        self.points += np.random.normal(0, noise, (self.N, self.d))
+        self.init()
 
     def return_noisy(self, noise, mode='noisy', idx=0, visualize=False):
         if mode == 'normal':
@@ -77,7 +77,12 @@ class PointConfiguration:
                 plot_thetas_in_one([self.theta, theta], ['original', 'noise'])
             return theta
 
-    def set_points(self, mode, points=None):
+    def set_points(self, mode, points=None, range_=settings.RANGE, size=1):
+        '''
+        Initialize points according to predefined modes.
+        Params:
+            range_  = [xmin, xmax, ymin, ymax]
+        '''
         if mode == 'last':
             if points is None:
                 print('Error: empty last point specification given.')
@@ -156,30 +161,26 @@ class PointConfiguration:
                         print('Error: nothing found after 100 iterations.')
                         return
             elif i < 0 and j < 0 and k < 0:
-                x = settings.RANGE[0] + (
-                    settings.RANGE[1] - settings.RANGE[0]) * np.random.rand(1)
-                y = settings.RANGE[2] + (
-                    settings.RANGE[1] - settings.RANGE[0]) * np.random.rand(1)
+                x = range_[0] + (
+                    range_[1] - range_[0]) * np.random.rand(1)
+                y = range_[2] + (
+                    range_[1] - range_[0]) * np.random.rand(1)
                 self.points[-1, :] = [x, y]
             else:
                 print("Error: non-valid arguments.")
         elif mode == 'random':
             """
             Create N uniformly distributed points in
-            [xlim[0],ylim[0]] x [xlim[1],ylim[1]]
+            [0, size] x [0, size]
             """
-            x = settings.RANGE[0] + (settings.RANGE[1] - settings.RANGE[0]
-                                     ) * np.random.rand(self.N)
-            y = settings.RANGE[2] + (settings.RANGE[1] - settings.RANGE[0]
-                                     ) * np.random.rand(self.N)
-            self.points = np.c_[x, y]
+            self.points = np.random.uniform(0, size, (self.N, self.d)) 
         elif mode == 'normal':
             self.points = np.random.normal(0, 1.0, (self.N, self.d))
         elif mode == 'circle':
-            x_range = (settings.RANGE[1] - settings.RANGE[0]) / 2.0
-            y_range = (settings.RANGE[3] - settings.RANGE[2]) / 2.0
-            c = np.array((settings.RANGE[0] + x_range,
-                          settings.RANGE[2] + y_range))
+            x_range = (range_[1] - range_[0]) / 2.0
+            y_range = (range_[3] - range_[2]) / 2.0
+            c = np.array((range_[0] + x_range,
+                          range_[2] + y_range))
             r = 0.9 * min(x_range, y_range)
             theta = 2 * pi / self.N
             for i in range(self.N):
@@ -448,11 +449,11 @@ class PointConfiguration:
         return reconstruction
 
     def plot_all(self, title='', size=[5, 2], filename=''):
-        from plots import plot_points
+        from plots_cti import plot_points
         plot_points(self.points, title, size, filename)
 
     def plot_some(self, range_, title='', size=[5, 2]):
-        from plots import plot_points
+        from plots_cti import plot_points
         plot_points(self.points[range_, :], title, size)
 
 

@@ -6,7 +6,7 @@ from cvxpy import *
 import numpy as np
 
 
-def reconstruct_sdp(EDM_noisy, W, lamda, points):
+def reconstruct_sdp(EDM_noisy, W, lamda, points, print_out=False):
     from algorithms import reconstruct_mds
     def kappa(gram):
         n = len(gram)
@@ -31,18 +31,22 @@ def reconstruct_sdp(EDM_noisy, W, lamda, points):
     prob = Problem(obj)
 
     ## Solution
-    print('total cost:', prob.solve())
+    total = prob.solve()
+    if (print_out):
+        print('total cost:', total)
+    
 
     Gbest = V * H.value * V.T
     EDMbest = kappa(Gbest)
 
     # TODO why do these two not sum up to the objective?
-    print('trace of H:', np.trace(H.value))
-    print('other cost:', lamda * norm(mul_elemwise(W, (EDMbest - EDM_noisy))).value)
+    if (print_out):
+        print('trace of H:', np.trace(H.value))
+        print('other cost:', lamda * norm(mul_elemwise(W, (EDMbest - EDM_noisy))).value)
 
     Ubest, Sbest, Vbest = np.linalg.svd(Gbest)
     Xhat = reconstruct_mds(EDMbest, points, method='geometric')
-    return Xhat, EDMbest,
+    return Xhat, EDMbest
     # TODO: why does this not work?
     #from basics import eigendecomp
     #factor, u = eigendecomp(Gbest, d)
