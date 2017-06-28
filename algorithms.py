@@ -6,6 +6,7 @@ import matplotlib.pyplot as plt
 from math import pi, floor, cos, sin
 from basics import rmse, eigendecomp, assert_print, assert_all_print
 
+
 def MDS(D, dim, method='simple', theta=True):
     N = D.shape[0]
     def theta_from_eigendecomp(factor, u):
@@ -45,24 +46,25 @@ def classical_mds(D):
     return MDS(D, 1, 'geometric')
 
 
-def procrustes(Y, X, scale=True):
+def procrustes(anchors, X, scale=True):
     '''
-    Given NA > d anchor nodes (Y in R^(NA x d)), return transformation
-    of coordinates X optimally matching Y in least squares sense. (output of EDM algorithm)
+    Given m > d anchor nodes (anchors in R^(m x d)), return transformation
+    of coordinates X (output of EDM algorithm) 
+    optimally matching anchors in least squares sense.
     '''
     def centralize(X):
         n = X.shape[0]
         ones = np.ones((n, 1))
         return X - np.multiply(1 / n * np.dot(ones.T, X), ones)
-    NA = Y.shape[0]
+    m = anchors.shape[0]
     N = X.shape[0]
-    X_NA = X[:NA, :]
-    ones = np.ones((NA, 1))
+    X_m = X[:m, :]
+    ones = np.ones((m, 1))
 
-    mux = 1 / NA * np.dot(ones.T, X_NA)
-    muy = 1 / NA * np.dot(ones.T, Y)
-    sigmax = 1 / NA * np.linalg.norm(X_NA - mux)**2
-    sigmaxy = 1 / NA * np.dot((Y - muy).T, X_NA - mux)
+    mux = 1 / m * np.dot(ones.T, X_m)
+    muy = 1 / m * np.dot(ones.T, anchors)
+    sigmax = 1 / m * np.linalg.norm(X_m - mux)**2
+    sigmaxy = 1 / m * np.dot((anchors - muy).T, X_m - mux)
     U, D, VT = np.linalg.svd(sigmaxy)
     #S = np.eye(D.shape[0])
     #this doesn't work and doesn't seem to be necessary! (why?)
@@ -103,7 +105,7 @@ def super_mds(Om, dm, X0, N, d):
     return Xhat, Vhat
 
 
-def SRLS(anchors, weights, r2, printout=False):
+def SRLS(anchors, W, r2, printout=False):
     '''
     Squared range least squares (A)
     A.Beck, P.Stoica
@@ -129,7 +131,7 @@ def SRLS(anchors, weights, r2, printout=False):
     n = anchors.shape[0]
     d = anchors.shape[1]
     A = np.c_[-2 * anchors, np.ones((n, 1))]
-    Sigma = np.diag(np.power(weights, 0.5))
+    Sigma = np.diag(np.power(W, 0.5))
     A = Sigma.dot(A)
     ATA = np.dot(A.T, A)
     b = r2 - np.power(np.linalg.norm(anchors, axis=1), 2)
@@ -280,10 +282,22 @@ def alternating_completion(edm, rank, mask, print_out=False, niter=50, tol=1e-6)
     return edm_complete, errs
 
 
-def reconstruct_mds(edm, points, plot=False, method='super', Om='', mask=None):
+def reconstruct_emds(edm, Om, real_points):
+    """
+    Edge-MDS using distances and angles.
+    """
+    N = real_points.shape[0]
+    d = real_points.shape[1]
+    dm = dm_from_edm(edm)
+    Xhat, __ = super_mds(Om, dm, real_points[0, :], N, d)
+    Y, R, t, c = procrustes(real_points, Xhat, True)
+    return Y
+
+
+def reconstruct_mds(edm, real_points, mask=None, method='geometric'):
     from point_configuration import dm_from_edm
-    N = points.shape[0]
-    d = points.shape[1]
+    N = real_points.shape[0]
+    d = real_points.shape[1]
     if mask is not None:
         from opt_space import opt_space
         edm_missing = np.multiply(edm, mask)
@@ -291,54 +305,50 @@ def reconstruct_mds(edm, points, plot=False, method='super', Om='', mask=None):
                                 tol=1e-6, print_out=False)
         edm = X.dot(S.dot(Y.T))
         edm[range(N), range(N)] = 0.0
-    if method == 'super':
-        dm = dm_from_edm(edm)
-        Xhat, __ = super_mds(Om, dm, points[0, :], N, d)
-    else:
-        Xhat = MDS(edm, d, method, False).T
-    Y, R, t, c = procrustes(points[:-1], Xhat, True)
+    Xhat = MDS(edm, d, method, False).T
+    Y, R, t, c = procrustes(real_points[:-1], Xhat, True)
+    #Y, R, t, c = procrustes(real_points, Xhat, True)
     return Y
 
 
-def reconstruct_srls(edm, points, plot=False, index=-1, weights=None):
-    anchors = np.delete(points, index, axis=0)
-
-    r2 = np.delete(edm[index, :], index)
-    if weights is None:
-        weights = np.ones(edm.shape)
-    w = np.delete(weights[index, :], index)
-
-    # delete anchors where weight is zero to avoid ill-conditioning
-    missing_anchors = np.where(w == 0.0)
-    w = np.delete(w, missing_anchors)
-    r2 = np.delete(r2, missing_anchors)
-    other = np.delete(range(edm.shape[0]), missing_anchors)
-    anchors = np.delete(anchors, missing_anchors, axis=0)
-
-    srls = SRLS(anchors, w, r2, plot)
+def reconstruct_srls(edm, points, plot=False, indices=[-1], W=None):
+    anchors = np.delete(points, indices, axis=0)
     Y = points.copy()
-    Y[index, :] = srls
+    for index in indices:
+        r2 = np.delete(edm[index, :], indices)
+        if W is None:
+            W = np.ones(edm.shape)
+        w = np.delete(W[index, :], indices)
+
+        # delete anchors where weight is zero to avoid ill-conditioning
+        missing_anchors = np.where(w == 0.0)
+        w = np.delete(w, missing_anchors)
+        r2 = np.delete(r2, missing_anchors)
+        other = np.delete(range(edm.shape[0]), missing_anchors)
+        anchors = np.delete(anchors, missing_anchors, axis=0)
+
+        srls = SRLS(anchors, w, r2, plot)
+        Y[index, :] = srls
     return Y
 
 
-def reconstruct_weighted(edm, weights, X_0, X_hat, points, print_out=False,):
+def reconstruct_acd(edm, W, X_0, real_points, print_out=False,):
     from point_configuration import create_from_points, PointConfiguration
     X_k = X_0.copy()
     N = X_k.shape[0]
     d = X_k.shape[1]
 
     # create reference object
-    preal = create_from_points(points, PointConfiguration)
+    preal = create_from_points(real_points, PointConfiguration)
     # create optimization object
     cd = create_from_points(X_k, PointConfiguration)
 
     if print_out:
         print('=======initialization=======')
         print('---mds---- edm    ', np.linalg.norm(cd.edm - edm))
-        print('---mds---- points ', np.linalg.norm(X_k - X_hat))
         print('---real--- edm    ', np.linalg.norm(cd.edm - preal.edm))
         print('---real--- points ', np.linalg.norm(X_k - preal.points))
-        print('cost function:', f(X_k, edm, weights))
+        print('cost function:', f(X_k, edm, W))
     fs = []
     err_edms = []
     err_points = []
@@ -350,22 +360,20 @@ def reconstruct_weighted(edm, weights, X_0, X_hat, points, print_out=False,):
     for sweep_counter in range(100):
         # sweep
         for i in np.where(coordinates_converged > 1)[0]:
-            #for i in range(N):
-            print('i', i)
             coord_counter = 0
             while coord_counter < coord_n_it:
                 coord_counter += 1
                 for coord in range(d):
-                    delt = get_step_size(i, coord, X_k, edm, weights)
+                    delt = get_step_size(i, coord, X_k, edm, W)
                     if len(delt) > 1:
                         ftest = []
                         for de in delt:
                             X_ktest = X_k.copy()
                             X_ktest[i, coord] += de
-                            ftest.append(f(X_ktest, edm, weights))
+                            ftest.append(f(X_ktest, edm, W))
                         delt = delt[ftest == min(ftest)]
                     X_k[i, coord] += delt
-                    f_this = f(X_k, edm, weights)
+                    f_this = f(X_k, edm, W)
                     fs.append(f_this)
                     cd.points = X_k
                     cd.init()
@@ -373,12 +381,13 @@ def reconstruct_weighted(edm, weights, X_0, X_hat, points, print_out=False,):
                     err_points.append(np.linalg.norm(X_k - preal.points))
                     if len(fs) > 2:
                         if abs(fs[-1] - fs[-2]) < 1e-3:
-                            print('weighted mds: coordinate converged after {} loops.'.format(
-                                coord_counter))
+                            if (print_out):
+                                print('acd: coordinate converged after {} loops.'.format(
+                                    coord_counter))
                             if coord_counter == 1:
                                 if coord_counter > coordinates_converged[i]:
                                     print(
-                                        '============= coordinate converged in more than before!!! ============')
+                                        'Unexpected behavior: Coordinate converged in more than before')
                             coordinates_converged[i] = coord_counter
                             coord_counter = coord_n_it
                             break
@@ -386,19 +395,21 @@ def reconstruct_weighted(edm, weights, X_0, X_hat, points, print_out=False,):
                             pass
                             #print('error:',abs(fs[-1] - fs[-2]))
         if (coordinates_converged == 1).all():
-            print('weighted mds: all coordinates converged after {} sweeps.'.format(
-                sweep_counter))
+            if (print_out):
+                print('acd: all coordinates converged after {} sweeps.'.format(
+                    sweep_counter))
             return X_k, fs, err_edms, err_points
         else:
-            print('weighted mds: not yet converged:', coordinates_converged)
+            if (print_out):
+                print('acd: not yet converged:', coordinates_converged)
         if (print_out):
             print('======= step {} ======='.format(sweep_counter))
             print('---mds---- edm    ', np.linalg.norm(cd.edm - edm))
-            print('---mds---- points ', np.linalg.norm(X_k - X_hat))
             print('---real--- edm    ', np.linalg.norm(cd.edm - preal.edm))
             print('---real--- points ', np.linalg.norm(X_k - preal.points))
-            print('cost function:', f(X_k, edm, weights))
-    print('weighted mds: did not converge after {} sweeps'.format(sweep_counter + 1))
+            print('cost function:', f(X_k, edm, W))
+    if (print_out):
+        print('acd: did not converge after {} sweeps'.format(sweep_counter + 1))
     return X_k, fs, err_edms, err_points
 
 
