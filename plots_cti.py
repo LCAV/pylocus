@@ -1,8 +1,9 @@
 #!/usr/bin/env python
-# module PLOTS
-
+# module PLOTS_CTI
 import matplotlib.pyplot as plt
 import numpy as np
+
+import settings
 
 LINESTYLES = ['-', ':', '--', '-.', '-.', '-.', '-.', '-.']
 MARKERS = [".", "o", "v", "+", "^", ">", "1",
@@ -102,6 +103,32 @@ def plot_point_sets_3d(point_sets, names, title='', display_lines=False):
     ax.legend()
     plt.show()
 
+def plot_points(points, title, size=[5, 2], filename=''):
+    if settings.DARK:
+        color = (0.2, 0.6, 0.1)
+    else:
+        color = None
+    f = plt.figure()
+    ax = f.add_subplot(111)
+    plt.gca().set_aspect('equal', adjustable='box')
+    #plt.axis(settings.RANGE)
+    legend = []
+    N = points.shape[0]
+    for i in range(N):
+        for j in range(i + 1, N):
+            plt.plot([points[i, 0], points[j, 0]],
+                     [points[i, 1], points[j, 1]], color=color)
+            legend.append(str(i) + str(j))
+    for i in range(N):
+        ax.annotate('%s' % i, xy=(
+            points[i, 0], points[i, 1]), textcoords='data')
+    plt.axis('off')
+    #plt.legend(legend, loc='best')
+    f.set_size_inches(size)
+    plt.title(title)
+    if filename != '':
+        plt.savefig(filename)
+    plt.show()
 
 def plot_cost_function(deltas, x_0, x_delta, fs, name):
     plt.figure()
