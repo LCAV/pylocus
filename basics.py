@@ -144,10 +144,22 @@ def create_noisy_edm(edm, noise):
     Returns noisy, yet symmetric and 0-diagonal, version of edm.
     '''
     N = edm.shape[0]
-    edm_noisy = edm + np.random.normal(scale=noise*2.0, size=edm.shape)
-    edm_noisy = 0.5 * (edm_noisy + edm_noisy.T)
-    edm_noisy[range(N), range(N)] = 0.0
+    found = False
+    max_it = 100
+    i = 0
+    while not found:
+        i += 1
+        edm_noisy = edm + np.random.normal(scale=noise * 2.0, size=edm.shape)
+        edm_noisy = 0.5 * (edm_noisy + edm_noisy.T)
+        edm_noisy[range(N), range(N)] = 0.0
+        if (edm_noisy >= 0).all():
+            found = True
+        if i > max_it:
+            print('create_noisy_edm: last EDM',edm_noisy)
+            raise RuntimeError(
+                'Could not generate all positive edm in {} iterations.'.format(max_it))
     return edm_noisy
+
 
 def get_edm(X):
     N = X.shape[0]

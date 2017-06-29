@@ -294,17 +294,22 @@ def reconstruct_emds(edm, Om, real_points):
     return Y
 
 
-def reconstruct_mds(edm, real_points, mask=None, method='geometric'):
+def reconstruct_mds(edm, real_points, completion='optspace', mask=None, method='geometric'):
     from point_configuration import dm_from_edm
     N = real_points.shape[0]
     d = real_points.shape[1]
     if mask is not None:
-        from opt_space import opt_space
-        edm_missing = np.multiply(edm, mask)
-        X, S, Y, __ = opt_space(edm_missing, r=d, niter=500,
-                                tol=1e-6, print_out=False)
-        edm = X.dot(S.dot(Y.T))
-        edm[range(N), range(N)] = 0.0
+        if completion == 'optspace':
+            from opt_space import opt_space
+            edm_missing = np.multiply(edm, mask)
+            X, S, Y, __ = opt_space(edm_missing, r=d, niter=500,
+                                    tol=1e-6, print_out=False)
+            edm = X.dot(S.dot(Y.T))
+            edm[range(N), range(N)] = 0.0
+        elif completion == 'alternate':
+            edm, errs = alternating_completion(edm, d+2, mask)
+        else:
+            raise NameError('Unknown completion method {}'.format(completion))
     Xhat = MDS(edm, d, method, False).T
     Y, R, t, c = procrustes(real_points[:-1], Xhat, True)
     #Y, R, t, c = procrustes(real_points, Xhat, True)
@@ -312,21 +317,18 @@ def reconstruct_mds(edm, real_points, mask=None, method='geometric'):
 
 
 def reconstruct_srls(edm, points, plot=False, indices=[-1], W=None):
-    anchors = np.delete(points, indices, axis=0)
     Y = points.copy()
     for index in indices:
+        anchors = np.delete(points, indices, axis=0)
         r2 = np.delete(edm[index, :], indices)
         if W is None:
             W = np.ones(edm.shape)
         w = np.delete(W[index, :], indices)
-
         # delete anchors where weight is zero to avoid ill-conditioning
         missing_anchors = np.where(w == 0.0)
         w = np.delete(w, missing_anchors)
         r2 = np.delete(r2, missing_anchors)
-        other = np.delete(range(edm.shape[0]), missing_anchors)
         anchors = np.delete(anchors, missing_anchors, axis=0)
-
         srls = SRLS(anchors, w, r2, plot)
         Y[index, :] = srls
     return Y
@@ -337,6 +339,9 @@ def reconstruct_acd(edm, W, X_0, real_points, print_out=False,):
     X_k = X_0.copy()
     N = X_k.shape[0]
     d = X_k.shape[1]
+    print('ACD:',X_k)
+    print(get_edm(X_k))
+
 
     # create reference object
     preal = create_from_points(real_points, PointConfiguration)
