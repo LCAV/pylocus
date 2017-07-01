@@ -339,9 +339,6 @@ def reconstruct_acd(edm, W, X_0, real_points, print_out=False,):
     X_k = X_0.copy()
     N = X_k.shape[0]
     d = X_k.shape[1]
-    print('ACD:',X_k)
-    print(get_edm(X_k))
-
 
     # create reference object
     preal = create_from_points(real_points, PointConfiguration)
