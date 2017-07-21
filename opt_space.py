@@ -114,7 +114,7 @@ def opt_space(M_E, r=None, niter=50, tol=1e-6, print_out=False):
         if print_out:
             print('%d\t\t\t%e' % (i + 1, errs[i + 1]))
 
-        if errs[i + 1] < tol:
+        if abs(errs[i + 1] - errs[i])< tol:
             break
     S = S / rescal_param
 
