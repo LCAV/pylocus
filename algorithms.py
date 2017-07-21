@@ -94,10 +94,11 @@ def reconstruct_sdp(edm, W, lamda, points, print_out=False):
     from edm_completion import semidefinite_relaxation
     edm_complete = semidefinite_relaxation(edm, W, lamda, print_out)
     Xhat = reconstruct_mds(edm_complete, points, method='geometric')
-    return Xhat, EDMbest
+    return Xhat, edm_complete
 
 
 def reconstruct_srls(edm, real_points, print_out=False, indices=[-1], W=None):
+    from lateration import SRLS
     Y = real_points.copy()
     for index in indices:
         anchors = np.delete(real_points, indices, axis=0)
@@ -201,7 +202,7 @@ def reconstruct_dwmds(edm, X0, W, r=None, n=None, X_bar=None, max_iter=100, tol=
     from basics import get_edm
     from distributed_mds import get_b, get_Si
 
-    N, d = X.shape
+    N, d = X0.shape
     if r is None and n is None:
         raise ValueError('either r or n have to be given.')
     elif n is None:
@@ -222,11 +223,10 @@ def reconstruct_dwmds(edm, X0, W, r=None, n=None, X_bar=None, max_iter=100, tol=
             bi = get_b(i, edm_estimated, W, edm, n)
             if r is not None and X_bar is not None:
                 X[i] = 1 / a[i] * (r[i] * X_bar[i, :] + X.T.dot(bi).flatten())
-                Si = get_Si(i, edm_estimated, edm, W, r, X_bar[i], X[i])
+                Si = get_Si(i, edm_estimated, edm, W, n, r, X_bar[i], X[i])
             else:
                 X[i] = 1 / a[i] * X.T.dot(bi).flatten()
-                Xi = get_Si(i, edm_estimated, edm, W)
-                Si = get_Si(i, edm_estimated, edm, W)
+                Si = get_Si(i, edm_estimated, edm, W, n)
             S += Si
         costs.append(S)
         if k > 1 and abs(costs[-1] - costs[-2]) < tol:
