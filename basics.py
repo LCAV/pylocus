@@ -139,23 +139,37 @@ def divide_where_nonzero(divide_this, by_this):
     return result
 
 
-def create_noisy_edm(edm, noise):
-    '''
-    Returns noisy, yet symmetric and 0-diagonal, version of edm.
-    '''
+def create_noisy_edm(edm, noise, n=None):
+    """Create noisy version of edm
+    
+    Adds symmetric Gaussian noise to non-diagonal elements of EDM (to distances!). 
+    The output EDM is ensured to have only positive entries.
+    
+    Args:
+        edm: Original, noiseless EDM.
+        noise: Standard deviation of Gaussian noise to be added to distances.
+        n: How many rows/columns to consider. Set to size of edm by default.
+    
+    Returns:
+        Noisy version of input EDM.
+    """
     N = edm.shape[0]
+    if n is None:
+        n = N
     found = False
     max_it = 100
     i = 0
     while not found:
         i += 1
-        edm_noisy = edm + np.random.normal(scale=noise * 2.0, size=edm.shape)
-        edm_noisy = 0.5 * (edm_noisy + edm_noisy.T)
+        dm = np.sqrt(edm) + np.random.normal(scale=noise, size=edm.shape)
+        dm = np.triu(dm)
+        edm_noisy = np.power(dm + dm.T, 2)
         edm_noisy[range(N), range(N)] = 0.0
+        edm_noisy[n:,n:] = edm[n:,n:]
         if (edm_noisy >= 0).all():
             found = True
         if i > max_it:
-            print('create_noisy_edm: last EDM',edm_noisy)
+            print('create_noisy_edm: last EDM', edm_noisy)
             raise RuntimeError(
                 'Could not generate all positive edm in {} iterations.'.format(max_it))
     return edm_noisy
