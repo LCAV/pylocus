@@ -74,7 +74,7 @@ def get_b(i, edm_est, W, edm_measured, n):
     b[i] = sum_bi
     return b
 
-def get_Si(i, edm_est, edm_measured, W, r=None, Xbari=None, Xi=None):
+def get_Si(i, edm_est, edm_measured, W, n, r=None, Xbari=None, Xi=None):
     if not all(v is None for v in (r, Xbari, Xi)) and not all(v is not None for v in (r, Xbari, Xi)):
             raise ValueError(
                 'All or none of r, Xbari, Xi have to be given.')

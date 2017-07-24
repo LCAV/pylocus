@@ -169,11 +169,9 @@ class PointConfiguration:
             else:
                 print("Error: non-valid arguments.")
         elif mode == 'random':
+            """ Create N uniformly distributed points in [0, size] x [0, size]
             """
-            Create N uniformly distributed points in
-            [0, size] x [0, size]
-            """
-            self.points = np.random.uniform(0, size, (self.N, self.d)) 
+            self.points = np.random.uniform(0, size, (self.N, self.d))
         elif mode == 'normal':
             self.points = np.random.normal(0, 1.0, (self.N, self.d))
         elif mode == 'circle':

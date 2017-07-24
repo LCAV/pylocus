@@ -1,6 +1,9 @@
 #!/usr/bin/env python
 # module LATERATION
 
+import numpy as np
+from basics import assert_print, assert_all_print
+
 def SRLS(anchors, W, r2, print_out=False):
     '''Squared range least squares (A)
 
