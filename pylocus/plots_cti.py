@@ -3,8 +3,6 @@
 import matplotlib.pyplot as plt
 import numpy as np
 
-import settings
-
 LINESTYLES = ['-', ':', '--', '-.', '-', ':', '--', '-.','-', ':', '--', '-.']
 MARKERS = [".", "o", "v", "+", "^", ">", "1",
            "2", "3", "4", "8", "s", "p", "*", "h"]
@@ -104,14 +102,13 @@ def plot_point_sets_3d(point_sets, names, title='', display_lines=False):
     plt.show()
 
 def plot_points(points, title, size=[5, 2], filename=''):
-    if settings.DARK:
+    if DARK:
         color = (0.2, 0.6, 0.1)
     else:
         color = None
     f = plt.figure()
     ax = f.add_subplot(111)
     plt.gca().set_aspect('equal', adjustable='box')
-    #plt.axis(settings.RANGE)
     legend = []
     N = points.shape[0]
     for i in range(N):

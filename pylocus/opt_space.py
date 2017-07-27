@@ -1,11 +1,11 @@
 #!/usr/bin/env python
 # module OPTSPACE
-'''
-Python implementation of optSpace algorithm for matrix completion.
+"""
+Python implementation of OptSpace algorithm for matrix completion.
 
 Author: golnoosh
 Extended by: frederike
-'''
+"""
 
 import numpy as np
 from scipy.sparse import coo_matrix, issparse

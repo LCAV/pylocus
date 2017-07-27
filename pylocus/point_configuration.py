@@ -9,7 +9,8 @@ import numpy as np
 from .settings import *
 from math import pi
 
-class PointConfiguration:
+
+class PointSet:
     """Class describing a typical point configuration.
 
     TODO: add a long description here.
@@ -30,51 +31,24 @@ class PointConfiguration:
         from scipy.special import binom
         self.N = N
         self.d = d
-        self.T = int(binom(self.N, 3))
-        self.M = int(3 * self.T)
         self.points = np.empty([self.N, self.d])
-        self.theta = np.empty([
-            self.M,
-        ])
-        self.corners = np.empty([self.M, 3])
-        self.abs_angles = np.empty([self.N, self.N])
         self.edm = np.empty([self.N, self.N])
 
     def copy(self):
-        new = PointConfiguration(self.N, self.d)
+        new = PointSet(self.N, self.d)
         new.points = self.points.copy()
-        new.theta = self.theta.copy()
-        new.corners = self.corners.copy()
-        new.abs_angles = self.abs_angles.copy()
+        #  new.theta = self.theta.copy()
+        #  new.corners = self.corners.copy()
+        #  new.abs_angles = self.abs_angles.copy()
         new.edm = self.edm.copy()
         return new
 
     def init(self):
         self.create_edm()
-        self.create_abs_angles()
-        self.create_theta()
 
     def add_noise(self, noise):
         self.points += np.random.normal(0, noise, (self.N, self.d))
         self.init()
-
-    def return_noisy(self, noise, mode='noisy', idx=0, visualize=False):
-        if mode == 'normal':
-            theta = self.theta.copy() + np.random.normal(0, noise, self.M)
-            if (visualize):
-                plot_thetas([self_theta, theta], ['original', 'noise'])
-            return theta
-        if mode == 'constant':
-            theta = self.theta.copy() + noise
-            if (visualize):
-                plot_thetas([self_theta, theta], ['original', 'noise'])
-            return theta
-        if mode == 'punctual':
-            theta = self.theta.copy()
-            theta[idx] += noise
-            if (visualize):
-                plot_thetas_in_one([self.theta, theta], ['original', 'noise'])
-            return theta
 
     def set_points(self, mode, points=None, range_=RANGE, size=1):
         '''
@@ -212,55 +186,44 @@ class PointConfiguration:
                 print("Error: No rule defined for N = ", self.N)
         self.init()
 
-# TODO: Which of the two below should be used?
-
-    def get_inner_angle(self, corner, other):
-        from .basics import get_inner_angle
-        return get_inner_angle(self.points[corner, :], (
-            self.points[other[0], :], self.points[other[1], :]))
-
-    def get_theta(self, i, j, k):
-        combination = np.array([i, j, k])
-        idx = np.all(self.corners == combination, axis=1)
-        return self.theta[idx][0]
-
-    def get_orientation(k, i, j):
-        from .basics import from_0_to_2pi
-        """calculate angles theta_ik and theta_jk theta produce point Pk.
-        Should give the same as get_absolute_angle! """
-        theta_ij = own.abs_angles[i, j]
-        theta_ji = own.abs_angles[j, i]
-
-        # complicated
-        xi = own.points[i, 0]
-        xj = own.points[j, 0]
-        yi = own.points[i, 1]
-        yj = own.points[j, 1]
-        w = np.array([yi - yj, xj - xi])
-        test = np.dot(own.points[k, :] - own.points[i, :], w) > 0
-
-        # more elegant
-        theta_ik = truth.abs_angles[i, k]
-        diff = from_0_to_2pi(theta_ik - theta_ij)
-        test2 = (diff > 0 and diff < pi)
-        assert (test == test2), "diff: %r, scalar prodcut: %r" % (diff, np.dot(
-            own.points[k, :] - own.points[i, :], w))
-
-        thetai_jk = truth.get_theta(i, j, k)
-        thetaj_ik = truth.get_theta(j, i, k)
-        if test:
-            theta_ik = theta_ij + thetai_jk
-            theta_jk = theta_ji - thetaj_ik
-        else:
-            theta_ik = theta_ij - thetai_jk
-            theta_jk = theta_ji + thetaj_ik
-        theta_ik = from_0_to_2pi(theta_ik)
-        theta_jk = from_0_to_2pi(theta_jk)
-        return theta_ik, theta_jk
-
     def create_edm(self):
         from .basics import get_edm
         self.edm = get_edm(self.points)
+
+    def plot_all(self, title='', size=[5, 2], filename=''):
+        from .plots_cti import plot_points
+        plot_points(self.points, title, size, filename)
+
+    def plot_some(self, range_, title='', size=[5, 2]):
+        from .plots_cti import plot_points
+        plot_points(self.points[range_, :], title, size)
+
+
+class ConstrainedSet(PointSet):
+    """ Class with angles and linear constraints."
+
+    TODO: Add longer description.
+
+    Attributes:
+        self.C: Number of linear constraints.
+        self.A: Matrix of constraints (self.C x self.M)
+        self.b: Vector of constraints (self.C x 1)
+    """
+
+    def __init__(self, N, d):
+        PointSet.__init__(self, N, d)
+        self.C = 1 
+        self.A = np.empty((self.C, self.M)) 
+        self.b = np.empty((self.C, 1)) 
+        self.T = int(binom(self.N, 3))
+        self.M = int(3 * self.T)
+        self.theta = np.empty([self.M, ])
+        self.corners = np.empty([self.M, 3])
+        self.abs_angles = np.empty([self.N, self.N])
+
+    def init(self):
+        self.create_abs_angles()
+        self.create_theta()
 
     def create_abs_angles(self):
         from .basics import get_absolute_angle
@@ -331,6 +294,71 @@ class PointConfiguration:
         self.theta = theta
         self.corners = corners
         return theta, corners
+
+# TODO: Which of the two below should be used?
+
+    def get_inner_angle(self, corner, other):
+        from .basics import get_inner_angle
+        return get_inner_angle(self.points[corner, :], (
+            self.points[other[0], :], self.points[other[1], :]))
+
+    def get_theta(self, i, j, k):
+        combination = np.array([i, j, k])
+        idx = np.all(self.corners == combination, axis=1)
+        return self.theta[idx][0]
+
+    def get_orientation(k, i, j):
+        from .basics import from_0_to_2pi
+        """calculate angles theta_ik and theta_jk theta produce point Pk.
+        Should give the same as get_absolute_angle! """
+        theta_ij = own.abs_angles[i, j]
+        theta_ji = own.abs_angles[j, i]
+
+        # complicated
+        xi = own.points[i, 0]
+        xj = own.points[j, 0]
+        yi = own.points[i, 1]
+        yj = own.points[j, 1]
+        w = np.array([yi - yj, xj - xi])
+        test = np.dot(own.points[k, :] - own.points[i, :], w) > 0
+
+        # more elegant
+        theta_ik = truth.abs_angles[i, k]
+        diff = from_0_to_2pi(theta_ik - theta_ij)
+        test2 = (diff > 0 and diff < pi)
+        assert (test == test2), "diff: %r, scalar prodcut: %r" % (diff, np.dot(
+            own.points[k, :] - own.points[i, :], w))
+
+        thetai_jk = truth.get_theta(i, j, k)
+        thetaj_ik = truth.get_theta(j, i, k)
+        if test:
+            theta_ik = theta_ij + thetai_jk
+            theta_jk = theta_ji - thetaj_ik
+        else:
+            theta_ik = theta_ij - thetai_jk
+            theta_jk = theta_ji + thetaj_ik
+        theta_ik = from_0_to_2pi(theta_ik)
+        theta_jk = from_0_to_2pi(theta_jk)
+        return theta_ik, theta_jk
+
+    def return_noisy(self, noise, mode='noisy', idx=0, visualize=False):
+        if mode == 'normal':
+            theta = self.theta.copy() + np.random.normal(0, noise, self.M)
+            if (visualize):
+                plot_thetas([self_theta, theta], ['original', 'noise'])
+            return theta
+        if mode == 'constant':
+            theta = self.theta.copy() + noise
+            if (visualize):
+                plot_thetas([self_theta, theta], ['original', 'noise'])
+            return theta
+        if mode == 'punctual':
+            theta = self.theta.copy()
+            theta[idx] += noise
+            if (visualize):
+                plot_thetas_in_one([self.theta, theta], ['original', 'noise'])
+            return theta
+
 
 # TODO: where do I need the three below?
 
@@ -444,32 +472,6 @@ class PointConfiguration:
         Pk = self.points[k, :]
         reconstruction = reconstruct(Pi, Pj, i, j, theta_tensor, Pk, k)
         return reconstruction
-
-    def plot_all(self, title='', size=[5, 2], filename=''):
-        from .plots_cti import plot_points
-        plot_points(self.points, title, size, filename)
-
-    def plot_some(self, range_, title='', size=[5, 2]):
-        from .plots_cti import plot_points
-        plot_points(self.points[range_, :], title, size)
-
-
-class ConstrainedConfiguration(PointConfiguration):
-    """ Class with linear constraints."
-
-    TODO: Add longer description.
-
-    Attributes:
-        self.C: Number of linear constraints.
-        self.A: Matrix of constraints (self.C x self.M)
-        self.b: Vector of constraints (self.C x 1)
-    """
-
-    def __init__(self, N, d):
-        PointConfiguration.__init__(self, N, d)
-        self.C = 1
-        self.A = np.empty((self.C, self.M))
-        self.b = np.empty((self.C, 1))
 
     def get_convex_polygons(self, m, print_out=False):
         """
@@ -625,9 +627,9 @@ class ConstrainedConfiguration(PointConfiguration):
         return A, b
 
 
-class HeterogenousConfiguration(PointConfiguration):
+class HeterogenousSet(PointSet):
     def __init__(self, N, d):
-        PointConfiguration.__init__(self, N, d)
+        PointSet.__init__(self, N, d)
         #TODO this is wrong! Is it really?
         self.m = int((self.N - 1) * self.N / 2.0)
         self.V = np.zeros((self.m, d))
@@ -637,7 +639,7 @@ class HeterogenousConfiguration(PointConfiguration):
         self.Om = np.zeros((self.m, self.m))
 
     def init(self):
-        PointConfiguration.init(self)
+        PointSet.init(self)
         start = 0
         for i in range(self.N):
             n = self.N - i - 1

@@ -117,16 +117,16 @@ def reconstruct_srls(edm, real_points, print_out=False, indices=[-1], W=None):
 
 
 def reconstruct_acd(edm, W, X_0, real_points, print_out=False,):
-    from .point_configuration import create_from_points, PointConfiguration
+    from .point_configuration import create_from_points, PointSet
     from .distributed_mds import get_step_size, f
     X_k = X_0.copy()
     N = X_k.shape[0]
     d = X_k.shape[1]
 
     # create reference object
-    preal = create_from_points(real_points, PointConfiguration)
+    preal = create_from_points(real_points, PointSet)
     # create optimization object
-    cd = create_from_points(X_k, PointConfiguration)
+    cd = create_from_points(X_k, PointSet)
 
     if print_out:
         print('=======initialization=======')

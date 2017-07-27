@@ -4,7 +4,7 @@
 import unittest
 import numpy as np
 import logging
-from .point_configuration import PointConfiguration, create_from_points
+from .point_configuration import PointSet, create_from_points
 
 
 class TestSRLS(unittest.TestCase):
@@ -12,7 +12,7 @@ class TestSRLS(unittest.TestCase):
     def setUp(self):
         N = 10
         d = 3
-        self.pts = PointConfiguration(N, d)
+        self.pts = PointSet(N, d)
         self.pts.set_points('random')
 
     def test_multiple(self):
@@ -32,7 +32,7 @@ class TestSRLS(unittest.TestCase):
         N_missing = 3
         indices = np.random.choice(other, size=N_missing, replace=False)
         reduced_points = np.delete(self.pts.points, indices, axis=0)
-        points_missing = create_from_points(reduced_points, PointConfiguration)
+        points_missing = create_from_points(reduced_points, PointSet)
         edm_missing = np.delete(edm_noisy, indices, axis=0)
         edm_missing = np.delete(edm_missing, indices, axis=1)
         missing_anchors = reconstruct_srls(
