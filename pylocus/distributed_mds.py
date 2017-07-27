@@ -28,7 +28,7 @@ def get_step_size(i, coord, X_k, D, W, print_out=False):
     roots = poly.roots()
     delta = np.real(roots[np.isreal(roots)])
     if (print_out):
-        from plots_cti import plot_cost_function
+        from .plots_cti import plot_cost_function
         deltas = np.linspace(delta - 1.0, delta + 1.0, 100)
         fs = []
         for delta_x in deltas:

@@ -6,9 +6,8 @@ __version__ = '0.1'
 __author__ = 'Frederike Duembgen'
 
 import numpy as np
-import settings
+from .settings import *
 from math import pi
-
 
 class PointConfiguration:
     """Class describing a typical point configuration.
@@ -77,7 +76,7 @@ class PointConfiguration:
                 plot_thetas_in_one([self.theta, theta], ['original', 'noise'])
             return theta
 
-    def set_points(self, mode, points=None, range_=settings.RANGE, size=1):
+    def set_points(self, mode, points=None, range_=RANGE, size=1):
         '''
         Initialize points according to predefined modes.
         Params:
@@ -216,7 +215,7 @@ class PointConfiguration:
 # TODO: Which of the two below should be used?
 
     def get_inner_angle(self, corner, other):
-        from basics import get_inner_angle
+        from .basics import get_inner_angle
         return get_inner_angle(self.points[corner, :], (
             self.points[other[0], :], self.points[other[1], :]))
 
@@ -226,7 +225,7 @@ class PointConfiguration:
         return self.theta[idx][0]
 
     def get_orientation(k, i, j):
-        from basics import from_0_to_2pi
+        from .basics import from_0_to_2pi
         """calculate angles theta_ik and theta_jk theta produce point Pk.
         Should give the same as get_absolute_angle! """
         theta_ij = own.abs_angles[i, j]
@@ -260,11 +259,11 @@ class PointConfiguration:
         return theta_ik, theta_jk
 
     def create_edm(self):
-        from basics import get_edm
+        from .basics import get_edm
         self.edm = get_edm(self.points)
 
     def create_abs_angles(self):
-        from basics import get_absolute_angle
+        from .basics import get_absolute_angle
         abs_angles = np.empty((self.N, self.N))
         for i in range(self.N):
             for j in range(i, self.N):
@@ -308,7 +307,7 @@ class PointConfiguration:
         Also returns the corners corresponding to each entry of theta.
         """
         import itertools
-        from basics import from_0_to_pi
+        from .basics import from_0_to_pi
         theta = np.empty((self.M, ))
         corners = np.empty((self.M, 3))
         k = 0
@@ -320,7 +319,7 @@ class PointConfiguration:
                 corners[k, :] = [corner, other[0], other[1]]
                 theta[k] = self.get_inner_angle(corner, other)
                 theta[k] = from_0_to_pi(theta[k])
-                if settings.DEBUG:
+                if DEBUG:
                     print(self.abs_angles[corner, other[0]],
                           self.abs_angles[corner, other[1]])
                     print('theta', corners[k, :], theta[k])
@@ -422,8 +421,8 @@ class PointConfiguration:
 # TODO: Which of these two is better? And should they really be in this class?
 
     def reconstruct_from_inner_angles(self, theta):
-        from algorithms import reconstruct_from_inner_angles
-        from algorithms import procrustes
+        from .algorithms import reconstruct_from_inner_angles
+        from .algorithms import procrustes
         theta_tensor = get_theta_tensor(theta, self.corners, self.N)
         reconstruction = reconstruct_from_inner_angles(
             self.points[0, :], self.points[1, :], self.abs_angles[0, 2],
@@ -435,7 +434,7 @@ class PointConfiguration:
         return reconstruction
 
     def reconstruct(self, theta):
-        from algorithms import reconstruct
+        from .algorithms import reconstruct
         i = 0
         j = 1
         theta_tensor = get_theta_tensor(theta, self.corners, self.N)
@@ -447,11 +446,11 @@ class PointConfiguration:
         return reconstruction
 
     def plot_all(self, title='', size=[5, 2], filename=''):
-        from plots_cti import plot_points
+        from .plots_cti import plot_points
         plot_points(self.points, title, size, filename)
 
     def plot_some(self, range_, title='', size=[5, 2]):
-        from plots_cti import plot_points
+        from .plots_cti import plot_points
         plot_points(self.points[range_, :], title, size)
 
 
@@ -627,7 +626,6 @@ class ConstrainedConfiguration(PointConfiguration):
 
 
 class HeterogenousConfiguration(PointConfiguration):
-
     def __init__(self, N, d):
         PointConfiguration.__init__(self, N, d)
         #TODO this is wrong! Is it really?

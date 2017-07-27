@@ -4,7 +4,7 @@ import numpy as np
 
 
 def classical_mds(D):
-    from mds import MDS
+    from .mds import MDS
     return MDS(D, 1, 'geometric')
 
 
@@ -54,7 +54,7 @@ def reconstruct_emds(edm, Om, real_points):
     """
     Edge-MDS using distances and angles.
     """
-    from mds import superMDS
+    from .mds import superMDS
     N = real_points.shape[0]
     d = real_points.shape[1]
     dm = dm_from_edm(edm)
@@ -64,17 +64,17 @@ def reconstruct_emds(edm, Om, real_points):
 
 
 def reconstruct_mds(edm, real_points, completion='optspace', mask=None, method='geometric', print_out=False):
-    from point_configuration import dm_from_edm
-    from mds import MDS
+    from .point_configuration import dm_from_edm
+    from .mds import MDS
     N = real_points.shape[0]
     d = real_points.shape[1]
     if mask is not None:
         edm_missing = np.multiply(edm, mask)
         if completion == 'optspace':
-            from edm_completion import optspace
+            from .edm_completion import optspace
             edm_complete = optspace(edm_missing, d + 2)
         elif completion == 'alternate':
-            from edm_completion import rank_alternation
+            from .edm_completion import rank_alternation
             edm_complete, errs = rank_alternation(
                 edm_missing, d + 2, print_out=False, edm_true=edm)
         else:
@@ -91,14 +91,14 @@ def reconstruct_mds(edm, real_points, completion='optspace', mask=None, method='
 
 
 def reconstruct_sdp(edm, W, lamda, points, print_out=False):
-    from edm_completion import semidefinite_relaxation
+    from .edm_completion import semidefinite_relaxation
     edm_complete = semidefinite_relaxation(edm, W, lamda, print_out)
     Xhat = reconstruct_mds(edm_complete, points, method='geometric')
     return Xhat, edm_complete
 
 
 def reconstruct_srls(edm, real_points, print_out=False, indices=[-1], W=None):
-    from lateration import SRLS
+    from .lateration import SRLS
     Y = real_points.copy()
     for index in indices:
         anchors = np.delete(real_points, indices, axis=0)
@@ -117,8 +117,8 @@ def reconstruct_srls(edm, real_points, print_out=False, indices=[-1], W=None):
 
 
 def reconstruct_acd(edm, W, X_0, real_points, print_out=False,):
-    from point_configuration import create_from_points, PointConfiguration
-    from distributed_mds import get_step_size, f
+    from .point_configuration import create_from_points, PointConfiguration
+    from .distributed_mds import get_step_size, f
     X_k = X_0.copy()
     N = X_k.shape[0]
     d = X_k.shape[1]
@@ -199,8 +199,8 @@ def reconstruct_acd(edm, W, X_0, real_points, print_out=False,):
 
 
 def reconstruct_dwmds(edm, X0, W, r=None, n=None, X_bar=None, max_iter=100, tol=1e-10):
-    from basics import get_edm
-    from distributed_mds import get_b, get_Si
+    from .basics import get_edm
+    from .distributed_mds import get_b, get_Si
 
     N, d = X0.shape
     if r is None and n is None:

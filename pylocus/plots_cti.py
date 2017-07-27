@@ -5,7 +5,7 @@ import numpy as np
 
 import settings
 
-LINESTYLES = ['-', ':', '--', '-.', '-.', '-.', '-.', '-.']
+LINESTYLES = ['-', ':', '--', '-.', '-', ':', '--', '-.','-', ':', '--', '-.']
 MARKERS = [".", "o", "v", "+", "^", ">", "1",
            "2", "3", "4", "8", "s", "p", "*", "h"]
 COLORS = ["black", "blue", "fuchsia", "gray", "aqua", "green", "lime",

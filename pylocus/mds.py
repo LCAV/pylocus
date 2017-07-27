@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # module MDS
-from basics import eigendecomp
 import numpy as np
+from .basics import eigendecomp
 
 
 def MDS(D, dim, method='simple', theta=True):

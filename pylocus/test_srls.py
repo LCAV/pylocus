@@ -4,7 +4,7 @@
 import unittest
 import numpy as np
 import logging
-from point_configuration import PointConfiguration, create_from_points
+from .point_configuration import PointConfiguration, create_from_points
 
 
 class TestSRLS(unittest.TestCase):
@@ -22,8 +22,8 @@ class TestSRLS(unittest.TestCase):
             self.test_zero_weights(-1, 0.0)
 
     def test_zero_weights(self, index=-1, noise=0.1):
-        from basics import create_noisy_edm
-        from algorithms import reconstruct_srls
+        from .basics import create_noisy_edm
+        from .algorithms import reconstruct_srls
         self.pts.set_points(mode='random')
         other = np.delete(range(self.pts.N), index)
         edm_noisy = create_noisy_edm(self.pts.edm, noise)

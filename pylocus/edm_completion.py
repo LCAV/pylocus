@@ -18,7 +18,7 @@ def optspace(edm_missing, rank, niter=500, tol=1e-6, print_out=False):
     Returns:
         Completed matrix.
     """
-    from opt_space import opt_space
+    from .opt_space import opt_space
     N = edm_missing.shape[0]
     X, S, Y, __ = opt_space(edm_missing, r=rank, niter=niter,
                             tol=tol, print_out=print_out)
@@ -43,7 +43,7 @@ def rank_alternation(edm_missing, rank, niter=50, print_out=False, edm_true=None
         The matrix is of the correct structure, but might not have the right measured entries.
 
     """
-    from basics import low_rank_approximation
+    from .basics import low_rank_approximation
     errs = []
     N = edm_missing.shape[0]
     edm_complete = edm_missing.copy()
@@ -67,7 +67,7 @@ def rank_alternation(edm_missing, rank, niter=50, print_out=False, edm_true=None
 
 
 def semidefinite_relaxation(edm, W, lamda, print_out=False):
-    from algorithms import reconstruct_mds
+    from .algorithms import reconstruct_mds
     def kappa(gram):
         n = len(gram)
         e = np.ones(n)
@@ -76,7 +76,6 @@ def semidefinite_relaxation(edm, W, lamda, print_out=False):
     def kappa_cvx(gram, n):
         e = np.ones((n, 1))
         return diag(gram) * e.T + e * diag(gram).T - 2 * gram
-        from algorithms import reconstruct_mds
 
     n = edm.shape[0]
     V = np.c_[-np.ones(n - 1) / np.sqrt(n), np.eye(n - 1) -
