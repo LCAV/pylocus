@@ -64,7 +64,7 @@ def reconstruct_emds(edm, Om, real_points):
 
 
 def reconstruct_mds(edm, real_points, completion='optspace', mask=None, method='geometric', print_out=False):
-    from .point_configuration import dm_from_edm
+    from .point_set import dm_from_edm
     from .mds import MDS
     N = real_points.shape[0]
     d = real_points.shape[1]
@@ -117,7 +117,7 @@ def reconstruct_srls(edm, real_points, print_out=False, indices=[-1], W=None):
 
 
 def reconstruct_acd(edm, W, X_0, real_points, print_out=False,):
-    from .point_configuration import create_from_points, PointSet
+    from .point_set import create_from_points, PointSet
     from .distributed_mds import get_step_size, f
     X_k = X_0.copy()
     N = X_k.shape[0]

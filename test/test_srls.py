@@ -3,9 +3,7 @@
 
 import unittest
 import numpy as np
-import logging
-from .point_configuration import PointSet, create_from_points
-
+from pylocus.point_set import PointSet, create_from_points
 
 class TestSRLS(unittest.TestCase):
 
@@ -22,8 +20,8 @@ class TestSRLS(unittest.TestCase):
             self.test_zero_weights(-1, 0.0)
 
     def test_zero_weights(self, index=-1, noise=0.1):
-        from .basics import create_noisy_edm
-        from .algorithms import reconstruct_srls
+        from pylocus.basics import create_noisy_edm
+        from pylocus.algorithms import reconstruct_srls
         self.pts.set_points(mode='random')
         other = np.delete(range(self.pts.N), index)
         edm_noisy = create_noisy_edm(self.pts.edm, noise)
@@ -36,14 +34,14 @@ class TestSRLS(unittest.TestCase):
         edm_missing = np.delete(edm_noisy, indices, axis=0)
         edm_missing = np.delete(edm_missing, indices, axis=1)
         missing_anchors = reconstruct_srls(
-            edm_missing, points_missing.points, index=index, weights=None)
+            edm_missing, points_missing.points, indices=[index], W=None)
 
         # missing distances
         weights = np.ones(edm_noisy.shape)
         weights[indices, :] = 0.0
         weights[:, indices] = 0.0
         missing_distances = reconstruct_srls(
-            edm_noisy, self.pts.points, index=index, weights=weights)
+            edm_noisy, self.pts.points, indices=[index], W=weights)
         left_distances = np.delete(range(self.pts.N), indices)
 
         self.assertTrue(np.linalg.norm(missing_distances[
@@ -56,6 +54,4 @@ class TestSRLS(unittest.TestCase):
                 missing_distances - self.pts.points) < 1e-10, 'error')
 
 if __name__ == "__main__":
-    logging.basicConfig(stream=sys.stderr)
-    logging.getLogger("TestMDS.test_angle_MDS").setLevel(logging.DEBUG)
     unittest.main()
