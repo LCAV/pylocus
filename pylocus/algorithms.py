@@ -116,10 +116,10 @@ def reconstruct_srls(edm, real_points, print_out=False, indices=[-1], W=None):
     return Y
 
 
-def reconstruct_acd(edm, W, X_0, real_points, print_out=False,):
+def reconstruct_acd(edm, W, X0, real_points, print_out=False, tol=1e-10):
     from .point_set import create_from_points, PointSet
     from .distributed_mds import get_step_size, f
-    X_k = X_0.copy()
+    X_k = X0.copy()
     N = X_k.shape[0]
     d = X_k.shape[1]
 
@@ -128,12 +128,6 @@ def reconstruct_acd(edm, W, X_0, real_points, print_out=False,):
     # create optimization object
     cd = create_from_points(X_k, PointSet)
 
-    if print_out:
-        print('=======initialization=======')
-        print('---mds---- edm    ', np.linalg.norm(cd.edm - edm))
-        print('---real--- edm    ', np.linalg.norm(cd.edm - preal.edm))
-        print('---real--- points ', np.linalg.norm(X_k - preal.points))
-        print('cost function:', f(X_k, edm, W))
     fs = []
     err_edms = []
     err_points = []
@@ -165,8 +159,10 @@ def reconstruct_acd(edm, W, X_0, real_points, print_out=False,):
                     err_edms.append(np.linalg.norm(cd.edm - edm))
                     err_points.append(np.linalg.norm(X_k - preal.points))
                     if len(fs) > 2:
-                        if abs(fs[-1] - fs[-2]) < 1e-3:
+                        if abs(fs[-1] - fs[-2]) < tol:
                             if (print_out):
+                                print(fs[-1])
+                                print(fs[-2])
                                 print('acd: coordinate converged after {} loops.'.format(
                                     coord_counter))
                             if coord_counter == 1:
@@ -179,6 +175,12 @@ def reconstruct_acd(edm, W, X_0, real_points, print_out=False,):
                         else:
                             pass
                             #print('error:',abs(fs[-1] - fs[-2]))
+        if (print_out):
+            print('======= step {} ======='.format(sweep_counter))
+            print('---mds---- edm    ', np.linalg.norm(cd.edm - edm))
+            print('---real--- edm    ', np.linalg.norm(cd.edm - preal.edm))
+            print('---real--- points ', np.linalg.norm(X_k - preal.points))
+            print('cost function:', f(X_k, edm, W))
         if (coordinates_converged == 1).all():
             if (print_out):
                 print('acd: all coordinates converged after {} sweeps.'.format(
@@ -187,18 +189,12 @@ def reconstruct_acd(edm, W, X_0, real_points, print_out=False,):
         else:
             if (print_out):
                 print('acd: not yet converged:', coordinates_converged)
-        if (print_out):
-            print('======= step {} ======='.format(sweep_counter))
-            print('---mds---- edm    ', np.linalg.norm(cd.edm - edm))
-            print('---real--- edm    ', np.linalg.norm(cd.edm - preal.edm))
-            print('---real--- points ', np.linalg.norm(X_k - preal.points))
-            print('cost function:', f(X_k, edm, W))
     if (print_out):
         print('acd: did not converge after {} sweeps'.format(sweep_counter + 1))
     return X_k, fs, err_edms, err_points
 
 
-def reconstruct_dwmds(edm, X0, W, r=None, n=None, X_bar=None, max_iter=100, tol=1e-10):
+def reconstruct_dwmds(edm, X0, W, r=None, n=None, X_bar=None, max_iter=100, tol=1e-10, print_out=False):
     from .basics import get_edm
     from .distributed_mds import get_b, get_Si
 
@@ -230,7 +226,9 @@ def reconstruct_dwmds(edm, X0, W, r=None, n=None, X_bar=None, max_iter=100, tol=
             S += Si
         costs.append(S)
         if k > 1 and abs(costs[-1] - costs[-2]) < tol:
-            #print('converged after', k)
+            if (print_out):
+                print('dwMDS: converged after', k)
+                print('dwMDS: costs:', costs)
             break
     return X, costs
 
