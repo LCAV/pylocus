@@ -3,14 +3,15 @@
 import matplotlib.pyplot as plt
 import numpy as np
 
-LINESTYLES = ['-', ':', '--', '-.', '-', ':', '--', '-.','-', ':', '--', '-.']
+LINESTYLES = ['-', ':', '--', '-.', '-', ':', '--', '-.', '-', ':', '--', '-.']
 MARKERS = [".", "o", "v", "+", "^", ">", "1",
            "2", "3", "4", "8", "s", "p", "*", "h"]
+
 COLORS = ["black", "blue", "fuchsia", "gray", "aqua", "green", "lime",
           "maroon", "navy", "olive", "purple", "red", "silver", "teal", "yellow"]
 
 
-def plot_point_sets(point_sets, title='', size=[10, 10], filename='', names=None, display_lines=False):
+def plot_tag_position(point_sets, title='', size=[10, 10], filename='', names=None, display_lines=False, index=0):
     import itertools
     if names is None:
         names = ['Original']
@@ -25,29 +26,70 @@ def plot_point_sets(point_sets, title='', size=[10, 10], filename='', names=None
     ymin = np.min(point_sets[0][:, 1]) - delta
     xmax = np.max(point_sets[0][:, 0]) + delta
     ymax = np.max(point_sets[0][:, 1]) + delta
-    plt.axis((xmin, xmax * 2.5, ymin, ymax))
+    plt.axis((xmin, xmax, ymin, ymax))
 
     legend = []
     for p, points in enumerate(point_sets):
         N = points.shape[0]
         if p == 0:
             for i in range(N):
-                # marker = MARKERS[i],label=names[p]
                 plt.plot(points[i, 0], points[i, 1], '.k')
                 ax.annotate('%s' % i, xy=(
                     points[i, 0], points[i, 1]), textcoords='data', size=20, weight='bold')
         #plot tag position
-        plt.plot(points[-1, 0], points[-1, 1], marker=MARKERS[p],
+        plt.plot(points[index, 0], points[index, 1], marker=MARKERS[p],
                  color=COLORS[p + 1], label=names[p], linewidth=2.0)
         if display_lines:
             for pair in itertools.combinations(range(N), 2):
                 plt.plot([points[pair[0], 0], points[pair[1], 0]], [points[pair[0], 1],
 
                                                                     points[pair[1], 1]], linestyle=LINESTYLES[p], color=COLORS[p], linewidth=2.0)
-        # Plot with label.
-        # plt.plot([points[0, 0], points[1, 0]], [points[0, 1], points[
-        # 1, 1]], linestyle=LINESTYLES[p], color=COLORS[p], linewidth=2.0,
-        # label=names[p])
+    f.set_size_inches(size)
+    if title == '':
+        plt.title('N = %r' % N)
+    else:
+        plt.title(title)
+    if filename != '':
+        plt.savefig(filename)
+    plt.legend(loc='best')
+    plt.show()
+
+
+def plot_point_sets(point_sets, title='', size=[10, 10], filename='', names=None, display_lines=False, index=0):
+    import itertools
+    if names is None:
+        names = ['Original']
+        for i in range(len(point_sets)):
+            names.append('Method {}'.format(i + 1))
+    f = plt.figure()
+    ax = f.add_subplot(111)
+    plt.gca().set_aspect('equal', adjustable='box')
+    # Set range automatically
+    delta = 1.0
+    xmin = np.min(point_sets[0][:, 0]) - delta
+    ymin = np.min(point_sets[0][:, 1]) - delta
+    xmax = np.max(point_sets[0][:, 0]) + delta
+    ymax = np.max(point_sets[0][:, 1]) + delta
+    plt.axis((xmin, xmax, ymin, ymax))
+
+    legend = []
+    for p, points in enumerate(point_sets):
+        N = points.shape[0]
+        for i in range(N):
+            if i == 0:
+                plt.plot(points[i, 0], points[i, 1], linestyle=':',color=COLORS[p], marker=MARKERS[p], label=names[p])
+            else:
+                plt.plot(points[i, 0], points[i, 1], linestyle=':',color=COLORS[p], marker=MARKERS[p])
+            if p == 0:
+                xy = (points[i, 0], points[i, 1])
+                ax.annotate('%s' % i, xy=xy, textcoords='data',
+                        size=20, weight='bold')
+        if display_lines:
+            for pair in itertools.combinations(range(N), 2):
+                xs = [points[pair[0], 0], points[pair[1], 0]]
+                ys = [points[pair[0], 1], points[pair[1], 1]]
+                plt.plot(
+                    xs, ys, linestyle=LINESTYLES[p], color=COLORS[p], linewidth=2.0)
     f.set_size_inches(size)
     if title == '':
         plt.title('N = %r' % N)
@@ -101,6 +143,7 @@ def plot_point_sets_3d(point_sets, names, title='', display_lines=False):
     ax.legend()
     plt.show()
 
+
 def plot_points(points, title, size=[5, 2], filename=''):
     if DARK:
         color = (0.2, 0.6, 0.1)
@@ -126,6 +169,7 @@ def plot_points(points, title, size=[5, 2], filename=''):
     if filename != '':
         plt.savefig(filename)
     plt.show()
+
 
 def plot_cost_function(deltas, x_0, x_delta, fs, name):
     plt.figure()
@@ -158,11 +202,14 @@ def create_multispan_plots(tag_ids):
     return fig, ax_list, ax_total
 
 
-def plot_matrix(matrix, title='matrix'):
-    plt.matshow(matrix)
+def plot_matrix(matrix, title='matrix', yticks=None):
+    plt.imshow(matrix, interpolation='none')
     plt.title(title, y=1.1)
     plt.colorbar()
+    if yticks is not None:
+        plt.yticks(range(matrix.shape[0]), yticks)
     plt.show()
+
 
 if __name__ == "__main__":
     print('nothing happens when running this module.')
