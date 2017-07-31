@@ -2,7 +2,9 @@
 # module DISTRIBUTED_MDS
 import numpy as np
 
-# ACD 
+# ACD
+
+
 def get_step_size(i, coord, X_k, D, W, print_out=False):
     def grad_f_i_x(i, coord, X_k, D, W, print_out):
         '''
@@ -41,6 +43,7 @@ def get_step_size(i, coord, X_k, D, W, print_out=False):
         plot_cost_function(deltas, X_0, x_delta, fs,  names[coord])
     return delta
 
+
 def f(X_k, D, W):
     def f_i(i, X_k, D, W):
         N = D.shape[0]
@@ -56,15 +59,17 @@ def f(X_k, D, W):
     return sum_
 
 # dwMDS
+
+
 def get_b(i, edm_est, W, edm_measured, n):
     b = np.zeros((edm_est.shape[0], 1))
     sum_bi = 0
     for j in range(edm_est.shape[0]):
         wij = W[i, j]
-        dij = edm_est[i, j]**0.5
-        delta_ij = edm_measured[i, j]**0.5
+        dij = edm_est[i, j]**0.5 if edm_est[i, j] > 0 else 0.
+        delta_ij = edm_measured[i, j]**0.5 if edm_measured[i, j] > 0 else 0.
         if j != i:
-            rij = delta_ij / dij
+            rij = delta_ij / dij if dij else 0.
         if j < n and j != i:
             b[j] = wij * (1 - rij)
             sum_bi += wij * rij
@@ -74,11 +79,16 @@ def get_b(i, edm_est, W, edm_measured, n):
     b[i] = sum_bi
     return b
 
+
 def get_Si(i, edm_est, edm_measured, W, n, r=None, Xbari=None, Xi=None):
     if not all(v is None for v in (r, Xbari, Xi)) and not all(v is not None for v in (r, Xbari, Xi)):
             raise ValueError(
                 'All or none of r, Xbari, Xi have to be given.')
-    matrix = np.multiply(W, (edm_est**0.5 - edm_measured**0.5)**2.0)
+    d_est = np.zeros_like(edm_est)
+    d_measured = np.zeros_like(edm_measured)
+    d_est[edm_est > 0] = edm_est[edm_est > 0]**0.5
+    d_measured[edm_measured > 0] = edm_measured[edm_measured > 0]**0.5
+    matrix = np.multiply(W, (d_est - d_measured)**2.0)
     # don't have to ignore i=j, because W[i,i] is zero.
     first = np.sum(matrix[i, :n])
     second = 2 * np.sum(matrix[i, n:])
@@ -86,6 +96,7 @@ def get_Si(i, edm_est, edm_measured, W, n, r=None, Xbari=None, Xi=None):
     if r is not None:
         Si += r[i] * np.linalg.norm(Xbari - Xi)**2
     return Si
+
 
 if __name__ == "__main__":
     print('This module contains functions for distributed MDS')
