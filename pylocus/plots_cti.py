@@ -202,12 +202,22 @@ def create_multispan_plots(tag_ids):
     return fig, ax_list, ax_total
 
 
-def plot_matrix(matrix, title='matrix', yticks=None):
-    plt.imshow(matrix, interpolation='none')
-    plt.title(title, y=1.1)
-    plt.colorbar()
+def plot_matrix(matrix, title='matrix', yticks=None, saveas=''):
+    from mpl_toolkits.axes_grid1 import make_axes_locatable
+    fig = plt.figure(figsize=(5,5))
+    ax = plt.subplot(111)
+
+    divider = make_axes_locatable(ax)
+    cax = divider.append_axes('right',size='5%',pad=0.05)
+
+    im = ax.imshow(matrix, interpolation='none')
+
+    fig.colorbar(im, cax=cax) # Create the colorbar
     if yticks is not None:
         plt.yticks(range(matrix.shape[0]), yticks)
+    if saveas != '':
+        plt.tight_layout()
+        plt.savefig(saveas)
     plt.show()
 
 
