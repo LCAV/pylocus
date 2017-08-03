@@ -77,13 +77,15 @@ def plot_point_sets(point_sets, title='', size=[10, 10], filename='', names=None
         N = points.shape[0]
         for i in range(N):
             if i == 0:
-                plt.plot(points[i, 0], points[i, 1], linestyle=':',color=COLORS[p], marker=MARKERS[p], label=names[p])
+                plt.plot(points[i, 0], points[i, 1], linestyle=':',
+                         color=COLORS[p], marker=MARKERS[p], label=names[p])
             else:
-                plt.plot(points[i, 0], points[i, 1], linestyle=':',color=COLORS[p], marker=MARKERS[p])
+                plt.plot(points[i, 0], points[i, 1], linestyle=':',
+                         color=COLORS[p], marker=MARKERS[p])
             if p == 0:
                 xy = (points[i, 0], points[i, 1])
                 ax.annotate('%s' % i, xy=xy, textcoords='data',
-                        size=20, weight='bold')
+                            size=20, weight='bold')
         if display_lines:
             for pair in itertools.combinations(range(N), 2):
                 xs = [points[pair[0], 0], points[pair[1], 0]]
@@ -185,34 +187,45 @@ def plot_cost_function(deltas, x_0, x_delta, fs, name):
 
 
 def create_multispan_plots(tag_ids):
-    '''
-    Create 2 rows of plots, 1st row with {number} subplots, second row with one 
-    total plot.
-    '''
+    """Create detail plots (first row) and total block(second row) of experiments.
+    
+    Args:
+            tag_ids: list of tag-dictionaries, where the dictionaries must have fields 'name' (used for naming) 
+                     and 'id' (used for numbering axis_dict)
+    
+    Returns:
+            Figure element fig, ax_dict containing the first row plots (accessed via id) and ax_total containing the 
+            second row block. 
+    """
     import matplotlib.gridspec as gridspec
-    fig = plt.figure(1)
+    fig = plt.figure()
     gs = gridspec.GridSpec(2, len(tag_ids))
-    ax_list = [fig.add_subplot(this_gs) for this_gs in gs]
-    fig.set_size_inches(10, 10)
+    ax_list = [fig.add_subplot(g) for g in gs]
+    ax_dict = {}
+    for i, tag_dict in enumerate(tag_ids):
+        ax_dict[tag_dict['id']] = ax_list[i]
     ax_total = plt.subplot(gs[1, :])
-    for count, tag_id in enumerate(tag_ids):
-        ax_list[count].set_title('Tag with Id {}'.format(tag_id))
+
+    fig.set_size_inches(10, 10)
+    for tag_dict in tag_ids:
+        ax_dict[tag_dict['id']].set_title(
+            'System {} (id {})'.format(tag_dict['name'], tag_dict['id']))
     ax_total.set_title('Total')
     gs.tight_layout(fig, rect=[0, 0.03, 1, 0.95])
-    return fig, ax_list, ax_total
+    return fig, ax_dict, ax_total
 
 
 def plot_matrix(matrix, title='matrix', yticks=None, saveas=''):
     from mpl_toolkits.axes_grid1 import make_axes_locatable
-    fig = plt.figure(figsize=(5,5))
+    fig = plt.figure(figsize=(5, 5))
     ax = plt.subplot(111)
 
     divider = make_axes_locatable(ax)
-    cax = divider.append_axes('right',size='5%',pad=0.05)
+    cax = divider.append_axes('right', size='5%', pad=0.05)
 
     im = ax.imshow(matrix, interpolation='none')
 
-    fig.colorbar(im, cax=cax) # Create the colorbar
+    fig.colorbar(im, cax=cax)  # Create the colorbar
     if yticks is not None:
         plt.yticks(range(matrix.shape[0]), yticks)
     if saveas != '':
