@@ -68,7 +68,7 @@ def SRLS(anchors, W, r2, print_out=False):
         lambda_opt = optimize.bisect(phi, I_orig, inf)
     except:
         print('Bisect failed. Trying Newton...')
-        lambda_opt = optimize.newton(phi, I_orig)
+        lambda_opt = optimize.newton(phi, I_orig, maxiter=1000)
     if (print_out):
         print('I', I)
         print('phi I', phi(I))
