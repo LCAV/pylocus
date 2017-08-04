@@ -20,7 +20,7 @@ def procrustes(anchors, X, scale=True):
         return X - np.multiply(1 / n * np.dot(ones.T, X), ones)
     m = anchors.shape[0]
     N = X.shape[0]
-    X_m = X[:m, :]
+    X_m = X[N-m:, :]
     ones = np.ones((m, 1))
 
     mux = 1 / m * np.dot(ones.T, X_m)
@@ -63,7 +63,7 @@ def reconstruct_emds(edm, Om, real_points):
     return Y
 
 
-def reconstruct_mds(edm, real_points, completion='optspace', mask=None, method='geometric', print_out=False):
+def reconstruct_mds(edm, real_points, completion='optspace', mask=None, method='geometric', print_out=False, n=1):
     from .point_set import dm_from_edm
     from .mds import MDS
     N = real_points.shape[0]
@@ -85,7 +85,7 @@ def reconstruct_mds(edm, real_points, completion='optspace', mask=None, method='
             print('{}: relative error:{}'.format(completion, err))
         edm = edm_complete
     Xhat = MDS(edm, d, method, False).T
-    Y, R, t, c = procrustes(real_points[:-1], Xhat, True)
+    Y, R, t, c = procrustes(real_points[n:], Xhat, True)
     #Y, R, t, c = procrustes(real_points, Xhat, True)
     return Y
 
@@ -106,11 +106,13 @@ def reconstruct_srls(edm, real_points, print_out=False, indices=[-1], W=None):
         if W is None:
             W = np.ones(edm.shape)
         w = np.delete(W[index, :], indices)
+
         # delete anchors where weight is zero to avoid ill-conditioning
         missing_anchors = np.where(w == 0.0)
         w = np.delete(w, missing_anchors)
         r2 = np.delete(r2, missing_anchors)
         anchors = np.delete(anchors, missing_anchors, axis=0)
+
         srls = SRLS(anchors, w, r2, print_out)
         Y[index, :] = srls
     return Y
@@ -175,12 +177,6 @@ def reconstruct_acd(edm, W, X0, real_points, print_out=False, tol=1e-10):
                         else:
                             pass
                             #print('error:',abs(fs[-1] - fs[-2]))
-        if (print_out):
-            print('======= step {} ======='.format(sweep_counter))
-            print('---mds---- edm    ', np.linalg.norm(cd.edm - edm))
-            print('---real--- edm    ', np.linalg.norm(cd.edm - preal.edm))
-            print('---real--- points ', np.linalg.norm(X_k - preal.points))
-            print('cost function:', f(X_k, edm, W))
         if (coordinates_converged == 1).all():
             if (print_out):
                 print('acd: all coordinates converged after {} sweeps.'.format(
