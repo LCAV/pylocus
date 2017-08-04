@@ -11,7 +11,7 @@ COLORS = ["black", "blue", "fuchsia", "gray", "aqua", "green", "lime",
           "maroon", "navy", "olive", "purple", "red", "silver", "teal", "yellow"]
 
 
-def plot_tag_position(point_sets, title='', size=[10, 10], filename='', names=None, display_lines=False, index=0):
+def plot_tag_position(point_sets, title='', size=[10, 10], filename='', names=None, display_lines=False, index=0, loc='best', ncol=1):
     import itertools
     if names is None:
         names = ['Original']
@@ -44,14 +44,15 @@ def plot_tag_position(point_sets, title='', size=[10, 10], filename='', names=No
                 plt.plot([points[pair[0], 0], points[pair[1], 0]], [points[pair[0], 1],
 
                                                                     points[pair[1], 1]], linestyle=LINESTYLES[p], color=COLORS[p], linewidth=2.0)
-    f.set_size_inches(size)
     if title == '':
-        plt.title('N = %r' % N)
+        plt.title('N = {}'.format(N))
     else:
         plt.title(title)
+    f.set_size_inches(size)
+    plt.legend(loc=loc, ncol=ncol)
+    plt.tight_layout()
     if filename != '':
         plt.savefig(filename)
-    plt.legend(loc='best')
     plt.show()
 
 
@@ -92,11 +93,12 @@ def plot_point_sets(point_sets, title='', size=[10, 10], filename='', names=None
                 ys = [points[pair[0], 1], points[pair[1], 1]]
                 plt.plot(
                     xs, ys, linestyle=LINESTYLES[p], color=COLORS[p], linewidth=2.0)
-    f.set_size_inches(size)
     if title == '':
         plt.title('N = %r' % N)
     else:
         plt.title(title)
+    f.set_size_inches(size)
+    plt.tight_layout()
     if filename != '':
         plt.savefig(filename)
     plt.legend(loc='best')
@@ -104,7 +106,6 @@ def plot_point_sets(point_sets, title='', size=[10, 10], filename='', names=None
 
 
 def plot_point_sets_3d(point_sets, names, title='', display_lines=False):
-
     from mpl_toolkits.mplot3d import Axes3D
     import itertools
     fig = plt.figure()
@@ -210,12 +211,15 @@ def create_multispan_plots(tag_ids):
     for tag_dict in tag_ids:
         ax_dict[tag_dict['id']].set_title(
             'System {} (id {})'.format(tag_dict['name'], tag_dict['id']))
-    ax_total.set_title('Total')
+    title = 'Combined {}'.format(tag_ids[0]['name'])
+    for i in range(1, len(tag_ids)):
+        title = title + ' and {}'.format(tag_ids[i]['name'])
+    ax_total.set_title(title)
     gs.tight_layout(fig, rect=[0, 0.03, 1, 0.95])
     return fig, ax_dict, ax_total
 
 
-def plot_matrix(matrix, title='matrix', yticks=None, saveas=''):
+def plot_matrix(matrix, title='matrix', yticks=None, saveas='',norm=''):
     from mpl_toolkits.axes_grid1 import make_axes_locatable
     fig = plt.figure(figsize=(5, 5))
     ax = plt.subplot(111)
@@ -223,9 +227,13 @@ def plot_matrix(matrix, title='matrix', yticks=None, saveas=''):
     divider = make_axes_locatable(ax)
     cax = divider.append_axes('right', size='5%', pad=0.05)
 
-    im = ax.imshow(matrix, interpolation='none')
+    if norm != '':
+        im = ax.imshow(matrix, interpolation='none', norm=norm)
+    else:
+        im = ax.imshow(matrix, interpolation='none')
 
-    fig.colorbar(im, cax=cax)  # Create the colorbar
+    fig.colorbar(im, cax=cax)
+
     if yticks is not None:
         plt.yticks(range(matrix.shape[0]), yticks)
     if saveas != '':
