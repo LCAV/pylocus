@@ -6,8 +6,10 @@ from math import pi, atan, atan2, sqrt, acos, cos, sin
 def rmse(x, xhat):
     ''' Calcualte rmse between vector or matrix x and xhat '''
     sum_ = np.sum(np.power(x - xhat, 2))
-    return sqrt(sum_ / len(x))
-
+    if x.ndim > 0:
+        return sqrt(sum_ / len(x))
+    else:
+        return sqrt(sum_)
 
 def low_rank_approximation(A, r):
     ''' Returns approximation of A of rank r in least-squares sense.'''
@@ -174,6 +176,15 @@ def create_noisy_edm(edm, noise, n=None):
                 'Could not generate all positive edm in {} iterations.'.format(max_it))
     return edm_noisy
 
+def get_rotation_matrix(thetas):
+    theta_x, theta_y, theta_z = thetas
+    cx, sx = np.cos(theta_x), np.sin(theta_x)
+    Rx = np.array([[1, 0, 0],[0, cx, sx],[0, -sx, cx]])
+    cy, sy = np.cos(theta_y), np.sin(theta_y)
+    Ry = np.array([[1, 0, 0],[0, cy, sy],[0, -sy, cy]])
+    cz, sz = np.cos(theta_z), np.sin(theta_z)
+    Rz = np.array([[1, 0, 0],[0, cz, sz],[0, -sz, cz]])
+    return Rx.dot(Ry.dot(Rz))
 
 def get_edm(X):
     N = X.shape[0]
