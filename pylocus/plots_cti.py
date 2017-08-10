@@ -3,6 +3,8 @@
 import matplotlib.pyplot as plt
 import numpy as np
 
+from .settings import *
+
 LINESTYLES = ['-', ':', '--', '-.', '-', ':', '--', '-.', '-', ':', '--', '-.']
 MARKERS = [".", "o", "v", "+", "^", ">", "1",
            "2", "3", "4", "8", "s", "p", "*", "h"]
@@ -22,10 +24,16 @@ def plot_tag_position(point_sets, title='', size=[10, 10], filename='', names=No
     plt.gca().set_aspect('equal', adjustable='box')
     # Set range automatically
     delta = 1.0
-    xmin = np.min(point_sets[0][:, 0]) - delta
-    ymin = np.min(point_sets[0][:, 1]) - delta
-    xmax = np.max(point_sets[0][:, 0]) + delta
-    ymax = np.max(point_sets[0][:, 1]) + delta
+    try:
+        xmin = np.min(point_sets[0][:, 0]) - delta
+        ymin = np.min(point_sets[0][:, 1]) - delta
+        xmax = np.max(point_sets[0][:, 0]) + delta
+        ymax = np.max(point_sets[0][:, 1]) + delta
+    except:
+        xmin = np.min(point_sets[0][0]) - delta
+        ymin = np.min(point_sets[0][1]) - delta
+        xmax = np.max(point_sets[0][0]) + delta
+        ymax = np.max(point_sets[0][1]) + delta
     plt.axis((xmin, xmax, ymin, ymax))
 
     legend = []
@@ -33,17 +41,20 @@ def plot_tag_position(point_sets, title='', size=[10, 10], filename='', names=No
         N = points.shape[0]
         if p == 0:
             for i in range(N):
-                plt.plot(points[i, 0], points[i, 1], '.k')
+                pi = points[i]
+                plt.plot(pi[0], pi[1], '.k')
                 ax.annotate('%s' % i, xy=(
-                    points[i, 0], points[i, 1]), textcoords='data', size=20, weight='bold')
+                    pi[0], pi[1]), textcoords='data', size=20, weight='bold')
         #plot tag position
-        plt.plot(points[index, 0], points[index, 1], marker=MARKERS[p],
+        p0 = points[index]
+        plt.plot(p0[0], p0[1], marker=MARKERS[p],
                  color=COLORS[p + 1], label=names[p], linewidth=2.0)
         if display_lines:
             for pair in itertools.combinations(range(N), 2):
-                plt.plot([points[pair[0], 0], points[pair[1], 0]], [points[pair[0], 1],
-
-                                                                    points[pair[1], 1]], linestyle=LINESTYLES[p], color=COLORS[p], linewidth=2.0)
+                p1 = points[pair[0]]
+                p2 = points[pair[1]]
+                plt.plot([p1[0], p2[0]], [p1[1], p2[1]],
+                         linestyle=LINESTYLES[p], color=COLORS[p], linewidth=2.0)
     if title == '':
         plt.title('N = {}'.format(N))
     else:
@@ -219,7 +230,7 @@ def create_multispan_plots(tag_ids):
     return fig, ax_dict, ax_total
 
 
-def plot_matrix(matrix, title='matrix', yticks=None, saveas='',norm=''):
+def plot_matrix(matrix, title='matrix', yticks=None, saveas='', norm=''):
     from mpl_toolkits.axes_grid1 import make_axes_locatable
     fig = plt.figure(figsize=(5, 5))
     ax = plt.subplot(111)
@@ -233,6 +244,7 @@ def plot_matrix(matrix, title='matrix', yticks=None, saveas='',norm=''):
         im = ax.imshow(matrix, interpolation='none')
 
     fig.colorbar(im, cax=cax)
+    ax.set_title(title)
 
     if yticks is not None:
         plt.yticks(range(matrix.shape[0]), yticks)
