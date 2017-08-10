@@ -9,11 +9,17 @@ def classical_mds(D):
 
 
 def procrustes(anchors, X, scale=True):
-    '''
+    """ Fit X to anchors by applying optimal translation and rotation. 
     Given m > d anchor nodes (anchors in R^(m x d)), return transformation
-    of coordinates X (output of EDM algorithm) 
-    optimally matching anchors in least squares sense.
-    '''
+    of coordinates X (output of EDM algorithm) optimally matching anchors in least squares sense.
+
+    Args:
+            anchors: Matrix of shape m x d, where m is number of anchors, d is dimension of setup.
+            X: Matrix of shape N x d, where the last m points will be used to find fit with the anchors. 
+    Returns:
+            the transformed vector X, 
+            and the used rotation matrix, translation vector, and scaling factor.
+    """
     def centralize(X):
         n = X.shape[0]
         ones = np.ones((n, 1))
