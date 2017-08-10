@@ -46,8 +46,10 @@ class PointSet:
     def init(self):
         self.create_edm()
 
-    def add_noise(self, noise):
-        self.points += np.random.normal(0, noise, (self.N, self.d))
+    def add_noise(self, noise, indices=None):
+        if indices is None:
+            indices = range(self.N)
+        self.points = return_noisy_points(noise, indices, self.points.copy())
         self.init()
 
     def set_points(self, mode, points=None, range_=RANGE, size=1):
@@ -679,6 +681,12 @@ def create_from_points(points, PointClass):
     new.points = points
     new.init()
     return new
+
+
+def return_noisy_points(noise, indices, points):
+    points[indices, :] += np.random.normal(0, noise, (len(indices), points.shape[1]))
+    return points
+
 
 
 if __name__ == "__main__":
