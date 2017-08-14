@@ -214,9 +214,9 @@ class ConstrainedSet(PointSet):
 
     def __init__(self, N, d):
         PointSet.__init__(self, N, d)
-        self.C = 1 
-        self.A = np.empty((self.C, self.M)) 
-        self.b = np.empty((self.C, 1)) 
+        self.C = 1
+        self.A = np.empty((self.C, self.M))
+        self.b = np.empty((self.C, 1))
         self.T = int(binom(self.N, 3))
         self.M = int(3 * self.T)
         self.theta = np.empty([self.M, ])
@@ -642,6 +642,10 @@ class HeterogenousSet(PointSet):
 
     def init(self):
         PointSet.init(self)
+        self.create_V()
+        self.create_Om()
+
+    def create_V(self):
         start = 0
         for i in range(self.N):
             n = self.N - i - 1
@@ -651,6 +655,8 @@ class HeterogenousSet(PointSet):
         self.V = np.dot(self.C, self.points)
         self.KE = np.dot(self.V, self.V.T)
         self.dm = np.linalg.norm(self.V, axis=1)
+
+    def create_Om(self):
         for i in range(self.m):
             for j in range(self.m):
                 if i != j:
@@ -684,9 +690,9 @@ def create_from_points(points, PointClass):
 
 
 def return_noisy_points(noise, indices, points):
-    points[indices, :] += np.random.normal(0, noise, (len(indices), points.shape[1]))
+    points[indices,
+           :] += np.random.normal(0, noise, (len(indices), points.shape[1]))
     return points
-
 
 
 if __name__ == "__main__":

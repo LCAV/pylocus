@@ -10,7 +10,7 @@ def classical_mds(D):
 
 def procrustes(anchors, X, scale=True):
     """ Fit X to anchors by applying optimal translation and rotation. 
-    Given m > d anchor nodes (anchors in R^(m x d)), return transformation
+    Given m >= d anchor nodes (anchors in R^(m x d)), return transformation
     of coordinates X (output of EDM algorithm) optimally matching anchors in least squares sense.
 
     Args:
@@ -25,7 +25,8 @@ def procrustes(anchors, X, scale=True):
         ones = np.ones((n, 1))
         return X - np.multiply(1 / n * np.dot(ones.T, X), ones)
     m = anchors.shape[0]
-    N = X.shape[0]
+    N, d = X.shape
+    assert m>= d, 'Have to give at least d anchor nodes.'
     X_m = X[N-m:, :]
     ones = np.ones((m, 1))
 
@@ -61,6 +62,7 @@ def reconstruct_emds(edm, Om, real_points):
     Edge-MDS using distances and angles.
     """
     from .mds import superMDS
+    from .point_set import dm_from_edm
     N = real_points.shape[0]
     d = real_points.shape[1]
     dm = dm_from_edm(edm)
