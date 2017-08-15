@@ -9,16 +9,15 @@ def classical_mds(D):
 
 
 def procrustes(anchors, X, scale=True):
-    """ Fit X to anchors by applying optimal translation and rotation. 
+    """ Fit X to anchors by applying optimal translation, rotation and reflection.
+
     Given m >= d anchor nodes (anchors in R^(m x d)), return transformation
     of coordinates X (output of EDM algorithm) optimally matching anchors in least squares sense.
 
-    Args:
-            anchors: Matrix of shape m x d, where m is number of anchors, d is dimension of setup.
-            X: Matrix of shape N x d, where the last m points will be used to find fit with the anchors. 
-    Returns:
-            the transformed vector X, 
-            and the used rotation matrix, translation vector, and scaling factor.
+    :param anchors: Matrix of shape m x d, where m is number of anchors, d is dimension of setup.
+    :param X: Matrix of shape N x d, where the last m points will be used to find fit with the anchors. 
+    
+    :return: the transformed vector X, the rotation matrix, translation vector, and scaling factor.
     """
     def centralize(X):
         n = X.shape[0]
@@ -58,8 +57,7 @@ def procrustes(anchors, X, scale=True):
 
 
 def reconstruct_emds(edm, Om, real_points):
-    """
-    Edge-MDS using distances and angles.
+    """ Reconstruct point set using E(dge)-MDS.
     """
     from .mds import superMDS
     from .point_set import dm_from_edm
@@ -72,6 +70,8 @@ def reconstruct_emds(edm, Om, real_points):
 
 
 def reconstruct_mds(edm, real_points, completion='optspace', mask=None, method='geometric', print_out=False, n=1):
+    """ Reconstruct point set using MDS and matrix completion algorithms.
+    """
     from .point_set import dm_from_edm
     from .mds import MDS
     N = real_points.shape[0]
@@ -99,6 +99,8 @@ def reconstruct_mds(edm, real_points, completion='optspace', mask=None, method='
 
 
 def reconstruct_sdp(edm, W, lamda, points, print_out=False):
+    """ Reconstruct point set using semi-definite rank relaxation.
+    """
     from .edm_completion import semidefinite_relaxation
     edm_complete = semidefinite_relaxation(edm, W, lamda, print_out)
     Xhat = reconstruct_mds(edm_complete, points, method='geometric')
@@ -106,6 +108,8 @@ def reconstruct_sdp(edm, W, lamda, points, print_out=False):
 
 
 def reconstruct_srls(edm, real_points, print_out=False, indices=[-1], W=None):
+    """ Reconstruct point set using S(quared)R(ange)L(east)S(quares) method.
+    """
     from .lateration import SRLS
     Y = real_points.copy()
     for index in indices:
@@ -127,6 +131,8 @@ def reconstruct_srls(edm, real_points, print_out=False, indices=[-1], W=None):
 
 
 def reconstruct_acd(edm, W, X0, real_points, print_out=False, tol=1e-10):
+    """ Reconstruct point set using alternating coordinate descent.
+    """
     from .point_set import create_from_points, PointSet
     from .distributed_mds import get_step_size, f
     X_k = X0.copy()
@@ -199,6 +205,8 @@ def reconstruct_acd(edm, W, X0, real_points, print_out=False, tol=1e-10):
 
 
 def reconstruct_dwmds(edm, X0, W, r=None, n=None, X_bar=None, max_iter=100, tol=1e-10, print_out=False):
+    """ Reconstruct point set using d(istributed)w(eighted) MDS.
+    """
     from .basics import get_edm
     from .distributed_mds import get_b, get_Si
 

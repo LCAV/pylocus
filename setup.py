@@ -9,20 +9,21 @@ with open(path.join(here, 'README.rst'), encoding='utf-8') as f:
     long_description = f.read()
 
 setup(
+
     name='pylocus',
 
-    version='1.0.0.dev1',
+    version='1.0.0.dev3',
 
     description='Localization Package',
 
     long_description=long_description,
 
     # The project's main homepage.
-    url='https://github.com/duembgen/pylocus',
+    url='https://github.com/LCAV/pylocus',
 
     # Author details
     author='Frederike Dümbgen',
-    author_email='frederike.duembgen@gmail.com',
+    author_email='frederike.duembgen@epfl.ch',
 
     # Choose your license
     license='BSD',
@@ -48,9 +49,7 @@ setup(
     # simple. Or you can use find_packages().
     # packages=find_packages(exclude=['contrib', 'docs', 'tests']),
 
-    # packages=['linvpy'],
-
-    packages=find_packages(exclude=['docs', 'tests']),
+    packages=['pylocus'],
 
     # Alternatively, if you want to distribute just a my_module.py, uncomment
     # this:
@@ -60,7 +59,7 @@ setup(
     # your project is installed. For an analysis of "install_requires" vs pip's
     # requirements files see:
     # https://packaging.python.org/en/latest/requirements.html
-    install_requires=['numpy','scipy','matplotlib','cvxpy'],
+    install_requires=['numpy'],
 
     # List additional groups of dependencies here (e.g. development
     # dependencies). You can install these using the following syntax,
@@ -69,7 +68,6 @@ setup(
     extras_require={
         #'dev': ['check-manifest'],
         #'test': ['coverage'],
-        'test': ['unittest']
     },
 
     # If there are data files included in your packages that need to be

@@ -4,7 +4,7 @@ from math import pi, atan, atan2, sqrt, acos, cos, sin
 
 
 def rmse(x, xhat):
-    ''' Calcualte rmse between vector or matrix x and xhat '''
+    """ Calcualte rmse between vector or matrix x and xhat """
     sum_ = np.sum(np.power(x - xhat, 2))
     if x.ndim > 0:
         return sqrt(sum_ / len(x))
@@ -12,7 +12,7 @@ def rmse(x, xhat):
         return sqrt(sum_)
 
 def low_rank_approximation(A, r):
-    ''' Returns approximation of A of rank r in least-squares sense.'''
+    """ Returns approximation of A of rank r in least-squares sense."""
     u, s, v = np.linalg.svd(A, full_matrices=False)
     Ar = np.zeros((len(u), len(v)))
     for i in range(r):
@@ -36,15 +36,15 @@ def check_psd(G, print_out=False, print_rank=False):
 
 
 def eigendecomp(G, d):
-    '''
+    """
     Computes sorted eigendecomposition of G.
-    Params
-        G:  Matrix 
-        d:  rank
-    Returns
-        factor: vector of square root d of eigenvalues (biggest to smallest). 
-        u: matrix with colums equal to the normalized eigenvectors corresponding to sorted eigenvalues.
-    '''
+
+    :param G:  Matrix 
+    :param d:  rank
+
+    :return factor: vector of square root d of eigenvalues (biggest to smallest). 
+    :return u: matrix with colums equal to the normalized eigenvectors corresponding to sorted eigenvalues.
+    """
     N = G.shape[0]
     lamda, u = np.linalg.eig(G)
     # test decomposition of G.
@@ -65,7 +65,7 @@ def eigendecomp(G, d):
 
 
 def change_angles(method, theta, tol=1e-10):
-    ''' Function used by all angle conversion functions (from_x_to_x_pi(...))'''
+    """ Function used by all angle conversion functions (from_x_to_x_pi(...))"""
     try:
         theta_new = np.zeros(theta.shape)
         for i, thet in enumerate(theta):
@@ -147,13 +147,11 @@ def create_noisy_edm(edm, noise, n=None):
     Adds symmetric Gaussian noise to non-diagonal elements of EDM (to distances!). 
     The output EDM is ensured to have only positive entries.
     
-    Args:
-        edm: Original, noiseless EDM.
-        noise: Standard deviation of Gaussian noise to be added to distances.
-        n: How many rows/columns to consider. Set to size of edm by default.
+    :param edm: Original, noiseless EDM.
+    :param noise: Standard deviation of Gaussian noise to be added to distances.
+    :param n: How many rows/columns to consider. Set to size of edm by default.
     
-    Returns:
-        Noisy version of input EDM.
+    :return: Noisy version of input EDM.
     """
     N = edm.shape[0]
     if n is None:

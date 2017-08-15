@@ -1,9 +1,7 @@
 #!/usr/bin/env python
-# TODO: add below to templates. Add docstrings to code snippets module.
-""" This is an example module
+""" Module containing classes for handling 2D or 3D point sets including
+point-to-point distances and angles.
 """
-__version__ = '0.1'
-__author__ = 'Frederike Duembgen'
 
 import numpy as np
 from .settings import *
@@ -13,18 +11,15 @@ from math import pi
 class PointSet:
     """Class describing a typical point configuration.
 
-    TODO: add a long description here.
-
-    Attributes:
-        self.N: Number of points.
-        self.d: Dimension or points (typically 2 or 3).
-        self.T: Number of triangles.
-        self.M: Number of inner angles.
-        self.points: Matrix of points (self.N x self.d).
-        self.theta: Vector of inner angles.
-        self.corners: Matrix of corners corresponding to inner angles. Row (k,i,j) corresponds to theta_k(i,j).
-        self.abs_angles: Matrix (self.N x self.N) of absolute angles. Element (i,j) corresponds to absolute angle from origin to ray from point i to point j.
-        self.edm: Matrix (self.Nx self.N) of squared distances (Euclidean distance matrix).
+    :param    self.N: Number of points.
+    :param    self.d: Dimension or points (typically 2 or 3).
+    :param    self.T: Number of triangles.
+    :param    self.M: Number of inner angles.
+    :param    self.points: Matrix of points (self.N x self.d).
+    :param    self.theta: Vector of inner angles.
+    :param    self.corners: Matrix of corners corresponding to inner angles. Row (k,i,j) corresponds to theta_k(i,j).
+    :param    self.abs_angles: Matrix (self.N x self.N) of absolute angles. Element (i,j) corresponds to absolute angle from origin to ray from point i to point j.
+    :param    self.edm: Matrix (self.Nx self.N) of squared distances (Euclidean distance matrix).
     """
 
     def __init__(self, N, d):
@@ -53,11 +48,10 @@ class PointSet:
         self.init()
 
     def set_points(self, mode, points=None, range_=RANGE, size=1):
-        '''
-        Initialize points according to predefined modes.
-        Params:
-            range_  = [xmin, xmax, ymin, ymax]
-        '''
+        """ Initialize points according to predefined modes.
+
+        :param range_:[xmin, xmax, ymin, ymax], range of point sets
+        """
         if mode == 'last':
             if points is None:
                 print('Error: empty last point specification given.')
@@ -148,7 +142,7 @@ class PointSet:
             """
             self.points = np.random.uniform(0, size, (self.N, self.d))
         elif mode == 'normal':
-            self.points = np.random.normal(0, 1.0, (self.N, self.d))
+            self.points = np.random.normal(0, size, (self.N, self.d))
         elif mode == 'circle':
             x_range = (range_[1] - range_[0]) / 2.0
             y_range = (range_[3] - range_[2]) / 2.0
@@ -202,14 +196,11 @@ class PointSet:
 
 
 class ConstrainedSet(PointSet):
-    """ Class with angles and linear constraints."
+    """ Class containing absolute/relative angles and linear constraints.
 
-    TODO: Add longer description.
-
-    Attributes:
-        self.C: Number of linear constraints.
-        self.A: Matrix of constraints (self.C x self.M)
-        self.b: Vector of constraints (self.C x 1)
+    :param self.C: Number of linear constraints.
+    :param self.A: Matrix of constraints (self.C x self.M)
+    :param self.b: Vector of constraints (self.C x 1)
     """
 
     def __init__(self, N, d):
@@ -244,7 +235,7 @@ class ConstrainedSet(PointSet):
         self.abs_angles = abs_angles
 
     def create_abs_angles_from_edm(self):
-        """TODO: which one is better?"""
+        #TODO: which one is better?
         rows, cols = np.indices((self.N, self.N))
         pi_pj_x = (self.points[rows, 0] - self.points[cols, 0])
         pi_pj_y = (self.points[rows, 1] - self.points[cols, 1])
@@ -379,7 +370,7 @@ class ConstrainedSet(PointSet):
         return D
 
     def get_closed_form(self, edm):
-        """ TODO: what is this? """
+        #TODO: what is this?
         Daug = self.get_tensor_edm()
         T = np.empty([self.N, self.N, self.N])
         for i in range(self.N):
@@ -406,13 +397,13 @@ class ConstrainedSet(PointSet):
 
     def get_indices(self, k):
         """ Get indices of theta vector that have k as first corner.
-        Args:
-            k: Index of corner.
-        Returns:
-            indices_rays: Indices of ray angles in theta vector.
-            indices_triangles: Indices of triangle angles in theta vector.
-            corners_rays: List of corners of ray angles.
-            angles_rays: List of corners of triangles angles.
+        
+        :param k: Index of corner.
+
+        :return indices_rays: Indices of ray angles in theta vector.
+        :return indices_triangles: Indices of triangle angles in theta vector.
+        :return corners_rays: List of corners of ray angles.
+        :return angles_rays: List of corners of triangles angles.
         """
         indices_rays = []
         indices_triangles = []
@@ -477,10 +468,9 @@ class ConstrainedSet(PointSet):
 
     def get_convex_polygons(self, m, print_out=False):
         """
-        Args:
-            m: size of polygones (number of corners)
-        Returns:
-            convex_polygons: (ordered) indices of all convex polygones of size m.
+        :param m: size of polygones (number of corners)
+        
+        :return: (ordered) indices of all convex polygones of size m.
         """
         convex_polygons = []
         for corners in itertools.combinations(np.arange(self.N), m):
@@ -521,10 +511,9 @@ class ConstrainedSet(PointSet):
                                 range_polygones=range(3, 5),
                                 print_out=False):
         """
-        Args:
-            range_polygones: list of numbers of polygones to test.
-        Returns:
-            A, b: the constraints on the theta-vector of the form A*theta = b
+        :param range_polygones: list of numbers of polygones to test.
+        
+        :return A, b: the constraints on the theta-vector of the form A*theta = b
         """
         rows_A = []
         rows_b = []
@@ -593,10 +582,9 @@ class ConstrainedSet(PointSet):
 
     def get_polygon_constraints_m(self, polygons_m, print_out=False):
         """
-        Args:
-            range_polygones: list of numbers of polygones to test.
-        Returns:
-            A, b: the constraints on the theta-vector of the form A*theta = b
+        :param range_polygones: list of numbers of polygones to test.
+
+        :return A, b: the constraints on the theta-vector of the form A*theta = b
         """
         rows_b = []
         rows_A = []
@@ -630,6 +618,12 @@ class ConstrainedSet(PointSet):
 
 
 class HeterogenousSet(PointSet):
+    """ Class containing heteregenous information in the form of direction vectors. 
+
+    :param self.C: Number of linear constraints.
+    :param self.A: Matrix of constraints (self.C x self.M)
+    :param self.b: Vector of constraints (self.C x 1)
+    """
     def __init__(self, N, d):
         PointSet.__init__(self, N, d)
         #TODO this is wrong! Is it really?
