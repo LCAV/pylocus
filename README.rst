@@ -36,7 +36,10 @@ Install
 *******
 
 To install from pip, simply run :
-$ sudo pip install pylocus
+
+.. code-block:: bash
+
+  pip install pylocus
 
 PyPi link : https://pypi.python.org/pypi/pylocus
 
