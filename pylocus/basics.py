@@ -5,11 +5,18 @@ from math import pi, atan, atan2, sqrt, acos, cos, sin
 
 def rmse(x, xhat):
     """ Calcualte rmse between vector or matrix x and xhat """
-    sum_ = np.sum(np.power(x - xhat, 2))
-    if x.ndim > 0:
-        return sqrt(sum_ / len(x))
+    mse = mse(x, xhat)
+    if mse:
+        return sqrt(mse)
     else:
-        return sqrt(sum_)
+        return 0
+
+
+def mse(x, xhat):
+    """ Calcualte mse between vector or matrix x and xhat """
+    sum_ = np.sum(np.power(x - xhat, 2))
+    return sum_ / x.size
+
 
 def low_rank_approximation(A, r):
     """ Returns approximation of A of rank r in least-squares sense."""
@@ -165,7 +172,7 @@ def create_noisy_edm(edm, noise, n=None):
         dm = np.triu(dm)
         edm_noisy = np.power(dm + dm.T, 2)
         edm_noisy[range(N), range(N)] = 0.0
-        edm_noisy[n:,n:] = edm[n:,n:]
+        edm_noisy[n:, n:] = edm[n:, n:]
         if (edm_noisy >= 0).all():
             found = True
         if i > max_it:
@@ -174,18 +181,57 @@ def create_noisy_edm(edm, noise, n=None):
                 'Could not generate all positive edm in {} iterations.'.format(max_it))
     return edm_noisy
 
+
 def get_rotation_matrix(thetas):
     theta_x, theta_y, theta_z = thetas
     cx, sx = np.cos(theta_x), np.sin(theta_x)
-    Rx = np.array([[1, 0, 0],[0, cx, sx],[0, -sx, cx]])
+    Rx = np.array([[1, 0, 0], [0, cx, sx], [0, -sx, cx]])
     cy, sy = np.cos(theta_y), np.sin(theta_y)
-    Ry = np.array([[1, 0, 0],[0, cy, sy],[0, -sy, cy]])
+    Ry = np.array([[1, 0, 0], [0, cy, sy], [0, -sy, cy]])
     cz, sz = np.cos(theta_z), np.sin(theta_z)
-    Rz = np.array([[1, 0, 0],[0, cz, sz],[0, -sz, cz]])
+    Rz = np.array([[1, 0, 0], [0, cz, sz], [0, -sz, cz]])
     return Rx.dot(Ry.dot(Rz))
+
 
 def get_edm(X):
     N = X.shape[0]
     rows, cols = np.indices((N, N))
     edm = np.sum((X[rows, :] - X[cols, :])**2, axis=2)
     return edm
+
+
+def pseudo_inverse(A):
+    inv = np.linalg.inv(A.dot(A.T))
+    return A.T.dot(inv)
+
+
+def projection(x, A, b):
+    """ Returns the vector xhat closest to x in 2-norm, satisfying Axhat=b.
+
+    :param x: vector
+    :param A, b: matrix and array characterizing the constraints on x (A*x = b)
+
+    :return x_hat:  optimum angle vector, minimizing cost.
+    :return cost: least square error of xhat, x
+    :return constraints_error: mse of constraint.
+    :rtype: (numpy.ndarray, float, float)
+    """
+    if (b != 0).any():
+        A_ext = np.c_[A, b]
+        A_pseudoinv = pseudo_inverse(A_ext)
+        if x.ndim > 1:
+            x_ext = np.r_[x, np.ones((1, x.shape[1]))]
+        else:
+            x_ext = np.r_[x, 1]
+
+        x_hat_ext = A_pseudoinv.dot(A_ext).dot(x_ext)
+        x_hat_ext /= x_hat_ext[-1]
+        x_hat = x_hat_ext[:-1]
+    else:
+        print('b is zero')
+        A_pseudoinv = pseudo_inverse(A)
+        x_hat = A_pseudoinv.dot(A).dot(x)
+
+    cost = mse(x_hat, x)
+    constraints_error = mse(A.dot(x_hat), b)
+    return x_hat, cost, constraints_error
