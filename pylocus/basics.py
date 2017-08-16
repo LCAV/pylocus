@@ -206,31 +206,18 @@ def pseudo_inverse(A):
 
 
 def projection(x, A, b):
-    """ Returns the vector xhat closest to x in 2-norm, satisfying Axhat=b.
+    """ Returns the vector xhat closest to x in 2-norm, satisfying A.xhat =b.
 
     :param x: vector
-    :param A, b: matrix and array characterizing the constraints on x (A*x = b)
+    :param A, b: matrix and array characterizing the constraints on x (A.x = b)
 
     :return x_hat:  optimum angle vector, minimizing cost.
     :return cost: least square error of xhat, x
     :return constraints_error: mse of constraint.
     :rtype: (numpy.ndarray, float, float)
     """
-    if (b != 0).any():
-        A_ext = np.c_[A, b]
-        A_pseudoinv = pseudo_inverse(A_ext)
-        if x.ndim > 1:
-            x_ext = np.r_[x, np.ones((1, x.shape[1]))]
-        else:
-            x_ext = np.r_[x, 1]
-
-        x_hat_ext = A_pseudoinv.dot(A_ext).dot(x_ext)
-        x_hat_ext /= x_hat_ext[-1]
-        x_hat = x_hat_ext[:-1]
-    else:
-        print('b is zero')
-        A_pseudoinv = pseudo_inverse(A)
-        x_hat = A_pseudoinv.dot(A).dot(x)
+    A_pseudoinv = pseudo_inverse(A)
+    x_hat = x - A_pseudoinv.dot(A.dot(x) - b)
 
     cost = mse(x_hat, x)
     constraints_error = mse(A.dot(x_hat), b)
