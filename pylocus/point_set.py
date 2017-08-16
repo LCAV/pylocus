@@ -620,13 +620,15 @@ class ConstrainedSet(PointSet):
 class HeterogenousSet(PointSet):
     """ Class containing heteregenous information in the form of direction vectors. 
 
-    :param self.C: Number of linear constraints.
-    :param self.A: Matrix of constraints (self.C x self.M)
-    :param self.b: Vector of constraints (self.C x 1)
+    :param self.m: Number of edges.
+    :param self.V: Matrix of edges (self.m x self.d)
+    :param self.KE: dissimilarity matrix (self.m x self.m) 
+    :param self.C: matrix for getting edges from points (self.V = self.C.dot(self.X))
+    :param self.dm: vector containing lengths of edges (self.m x 1)
+    :param self.Om: Matrix containing cosines of inner angles (self.m x self.m)
     """
     def __init__(self, N, d):
         PointSet.__init__(self, N, d)
-        #TODO this is wrong! Is it really?
         self.m = int((self.N - 1) * self.N / 2.0)
         self.V = np.zeros((self.m, d))
         self.KE = np.zeros((self.m, self.m))
