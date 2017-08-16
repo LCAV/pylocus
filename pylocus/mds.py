@@ -39,12 +39,26 @@ def MDS(D, dim, method='simple', theta=True):
         print('Unknown method {} in MDS'.format(method))
 
 
-def superMDS(Om, dm, X_0, N, d):
-    factor, u = eigendecomp(Om, d)
-    uhat = u[:, :d]
-    lambdahat = np.diag(factor[:d])
-    diag_dm = np.diag(dm)
-    Vhat = np.dot(diag_dm, np.dot(uhat, lambdahat))
+def superMDS(X_0, N, d, **kwargs):
+    Om = kwargs.get('Om',None)
+    dm = kwargs.get('dm',None)
+    if Om is not None and dm is not None:
+        KE = kwargs.get('KE',None)
+        if KE is not None:
+            print('superMDS: KE and Om, dm given. Continuing with Om, dm')
+        factor, u = eigendecomp(Om, d)
+        uhat = u[:, :d]
+        lambdahat = np.diag(factor[:d])
+        diag_dm = np.diag(dm)
+        Vhat = np.dot(diag_dm, np.dot(uhat, lambdahat))
+    elif Om is None or dm is None:
+        KE = kwargs.get('KE',None)
+        if KE is None:
+            raise NameError('Either KE or Om and dm have to be given.')
+        factor, u = eigendecomp(KE, d)
+        lambda_ = np.diag(factor)
+        Vhat = np.dot(u,lambda_)[:,:d]
+
     C_inv = -np.eye(N)
     C_inv[0, 0] = 1.0
     C_inv[:, 0] = 1.0

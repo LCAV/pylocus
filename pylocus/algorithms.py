@@ -34,24 +34,24 @@ def procrustes(anchors, X, scale=True):
     sigmax = 1 / m * np.linalg.norm(X_m - mux)**2
     sigmaxy = 1 / m * np.dot((anchors - muy).T, X_m - mux)
     U, D, VT = np.linalg.svd(sigmaxy)
-    #S = np.eye(D.shape[0])
     #this doesn't work and doesn't seem to be necessary! (why?)
-    #if (np.linalg.det(U)*np.linalg.det(VT.T) < 0):
-    #print('switching')
-    #S[-1,-1] = -1.0
-    #c = np.trace(np.dot(np.diag(D),S))/sigmax
-    #R = np.dot(U, np.dot(S,VT))
+    #  S = np.eye(D.shape[0])
+    #  if (np.linalg.det(U)*np.linalg.det(VT.T) < 0):
+        #  print('switching')
+        #  S[-1,-1] = -1.0
+    #  else:
+        #  print('not switching')
+    #  c = np.trace(np.dot(np.diag(D),S))/sigmax
+    #  R = np.dot(U, np.dot(S,VT))
     if (scale):
         c = np.trace(np.diag(D)) / sigmax
     else:
         c = np.trace(np.diag(D)) / sigmax
         if abs(c - 1) > 1e-10:
-            print('scale not equal to 1: {}. Setting it to 1 now.'.format(c))
+            print('Optimal scale would be: {}. Setting it to 1 now.'.format(c))
         c = 1.0
     R = np.dot(U, VT)
-    #t = np.dot(muy - c*np.dot(R, mux))
     t = muy.T - c * np.dot(R, mux.T)
-    X_transformed2 = c * np.dot(R, X.T) + t
     X_transformed = (c * np.dot(R, (X - mux).T) + muy.T).T
     return X_transformed, R, t, c
 
@@ -64,7 +64,7 @@ def reconstruct_emds(edm, Om, real_points):
     N = real_points.shape[0]
     d = real_points.shape[1]
     dm = dm_from_edm(edm)
-    Xhat, __ = superMDS(Om, dm, real_points[0, :], N, d)
+    Xhat, __ = superMDS(real_points[0, :], N, d, Om=Om, dm=dm)
     Y, R, t, c = procrustes(real_points, Xhat, True)
     return Y
 
