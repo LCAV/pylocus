@@ -2,20 +2,19 @@ import numpy as np
 import itertools
 from math import pi, atan, atan2, sqrt, acos, cos, sin
 
-
-def rmse(x, xhat):
-    """ Calcualte rmse between vector or matrix x and xhat """
-    mse = mse(x, xhat)
-    if mse:
-        return sqrt(mse)
-    else:
-        return 0
-
-
 def mse(x, xhat):
     """ Calcualte mse between vector or matrix x and xhat """
     sum_ = np.sum(np.power(x - xhat, 2))
     return sum_ / x.size
+
+
+def rmse(x, xhat):
+    """ Calcualte rmse between vector or matrix x and xhat """
+    ms_error = mse(x, xhat)
+    if ms_error:
+        return sqrt(ms_error)
+    else:
+        return 0
 
 
 def low_rank_approximation(A, r):

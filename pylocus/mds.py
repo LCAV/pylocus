@@ -39,7 +39,7 @@ def MDS(D, dim, method='simple', theta=True):
         print('Unknown method {} in MDS'.format(method))
 
 
-def superMDS(X_0, N, d, **kwargs):
+def superMDS(X0, N, d, **kwargs):
     Om = kwargs.get('Om',None)
     dm = kwargs.get('dm',None)
     if Om is not None and dm is not None:
@@ -63,10 +63,36 @@ def superMDS(X_0, N, d, **kwargs):
     C_inv[0, 0] = 1.0
     C_inv[:, 0] = 1.0
     b = np.zeros((C_inv.shape[1], d))
-    b[0, :] = X_0
+    b[0, :] = X0
     b[1:, :] = Vhat[:N - 1, :]
     Xhat = np.dot(C_inv, b)
     return Xhat, Vhat
+
+
+def iterativeMDS(X0, N, d, C, b, max_it=10, print_out=False, **kwargs):
+    from pylocus.basics import mse, projection
+    KE = kwargs.get('KE',None)
+    KE_projected = KE.copy()
+    d = len(X0)
+    for i in range(max_it):
+        # projection on constraints
+        KE_projected, cost, error = projection(KE_projected, C, b)
+        rank = np.linalg.matrix_rank(KE_projected)
+
+        # rank 2 decomposition
+        Xhat_KE, Vhat_KE = superMDS(X0, N, d, KE=KE_projected)
+        KE_projected = Vhat_KE.dot(Vhat_KE.T)
+
+        error = mse(C.dot(KE_projected), b)
+
+        if (print_out):
+            print('cost={:2.2e},error={:2.2e}, rank={}'.format(cost, error, rank))
+        if cost < 1e-20 and error < 1e-20 and rank == d:
+            if (print_out):
+                print('converged after {} iterations'.format(i))
+            return Xhat_KE, Vhat_KE
+    print('did not converge!')
+    return None, None
 
 
 if __name__ == "__main__":

@@ -8,7 +8,7 @@ def classical_mds(D):
     return MDS(D, 1, 'geometric')
 
 
-def procrustes(anchors, X, scale=True):
+def procrustes(anchors, X, scale=True, print_out=False):
     """ Fit X to anchors by applying optimal translation, rotation and reflection.
 
     Given m >= d anchor nodes (anchors in R^(m x d)), return transformation
@@ -47,7 +47,7 @@ def procrustes(anchors, X, scale=True):
         c = np.trace(np.diag(D)) / sigmax
     else:
         c = np.trace(np.diag(D)) / sigmax
-        if abs(c - 1) > 1e-10:
+        if (print_out):
             print('Optimal scale would be: {}. Setting it to 1 now.'.format(c))
         c = 1.0
     R = np.dot(U, VT)
@@ -56,16 +56,25 @@ def procrustes(anchors, X, scale=True):
     return X_transformed, R, t, c
 
 
-def reconstruct_emds(edm, Om, real_points):
+def reconstruct_emds(edm, Om, real_points, iterative=False, **kwargs):
     """ Reconstruct point set using E(dge)-MDS.
     """
-    from .mds import superMDS
     from .point_set import dm_from_edm
     N = real_points.shape[0]
     d = real_points.shape[1]
     dm = dm_from_edm(edm)
-    Xhat, __ = superMDS(real_points[0, :], N, d, Om=Om, dm=dm)
-    Y, R, t, c = procrustes(real_points, Xhat, True)
+    if not iterative:
+        from .mds import superMDS
+        Xhat, __ = superMDS(real_points[0, :], N, d, Om=Om, dm=dm)
+    else:
+        from .mds import iterativeMDS
+        C = kwargs.get('C',None) 
+        b = kwargs.get('b',None) 
+        if C is None or b is None:
+            raise NameError('Need constraints C and b for reconstruct_emds in iterative mode.')
+        KE = np.multiply(np.outer(dm, dm), Om)
+        Xhat, __ = iterativeMDS(real_points[0, :], N, d, KE=KE, C=C, b=b)
+    Y, R, t, c = procrustes(real_points, Xhat, scale=False)
     return Y
 
 

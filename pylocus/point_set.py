@@ -627,6 +627,7 @@ class HeterogenousSet(PointSet):
     :param self.dm: vector containing lengths of edges (self.m x 1)
     :param self.Om: Matrix containing cosines of inner angles (self.m x self.m)
     """
+
     def __init__(self, N, d):
         PointSet.__init__(self, N, d)
         self.m = int((self.N - 1) * self.N / 2.0)
@@ -661,6 +662,33 @@ class HeterogenousSet(PointSet):
                 else:
                     cos_inner_angle = 1.0
                 self.Om[i, j] = cos_inner_angle
+
+    def get_KE_constraints(self):
+        """Get linear constraints on KE matrix.
+        """
+        C2 = np.eye(self.m)
+        C2 = C2[:self.m - 2, :]
+        to_be_deleted = []
+        for idx_vij_1 in range(self.m - 2):
+            idx_vij_2 = idx_vij_1 + 1
+            C2[idx_vij_1, idx_vij_2] = -1
+            i1 = np.where(self.C[idx_vij_1, :] == 1)[0][0]
+            i2 = np.where(self.C[idx_vij_2, :] == 1)[0][0]
+            j = np.where(self.C[idx_vij_1, :] == -1)[0][0]
+            if i1 == i2:
+                i = i1
+                k = np.where(self.C[idx_vij_2, :] == -1)[0][0]
+                i_indices = self.C[:, j] == 1
+                j_indices = self.C[:, k] == -1
+                idx_vij_3 = np.where(np.bitwise_and(i_indices, j_indices))[0][0]
+                #print('v{}{}, v{}{}, v{}{}\n{}    {}    {}'.format(j,i,k,i,k,j,idx_vij_1,idx_vij_2,idx_vij_3))
+                C2[idx_vij_1, idx_vij_3] = 1
+            else:
+                #print('v{}{}, v{}{} not considered.'.format(j,i1,j,i2))
+                to_be_deleted.append(idx_vij_1)
+        C2 = np.delete(C2, to_be_deleted, axis=0)
+        b = np.zeros((C2.shape[0],1))
+        return C2, b
 
 
 def dm_from_edm(edm):
