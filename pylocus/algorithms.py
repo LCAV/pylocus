@@ -25,8 +25,8 @@ def procrustes(anchors, X, scale=True, print_out=False):
         return X - np.multiply(1 / n * np.dot(ones.T, X), ones)
     m = anchors.shape[0]
     N, d = X.shape
-    assert m>= d, 'Have to give at least d anchor nodes.'
-    X_m = X[N-m:, :]
+    assert m >= d, 'Have to give at least d anchor nodes.'
+    X_m = X[N - m:, :]
     ones = np.ones((m, 1))
 
     mux = 1 / m * np.dot(ones.T, X_m)
@@ -37,10 +37,10 @@ def procrustes(anchors, X, scale=True, print_out=False):
     #this doesn't work and doesn't seem to be necessary! (why?)
     #  S = np.eye(D.shape[0])
     #  if (np.linalg.det(U)*np.linalg.det(VT.T) < 0):
-        #  print('switching')
-        #  S[-1,-1] = -1.0
+    #  print('switching')
+    #  S[-1,-1] = -1.0
     #  else:
-        #  print('not switching')
+    #  print('not switching')
     #  c = np.trace(np.dot(np.diag(D),S))/sigmax
     #  R = np.dot(U, np.dot(S,VT))
     if (scale):
@@ -68,10 +68,11 @@ def reconstruct_emds(edm, Om, real_points, iterative=False, **kwargs):
         Xhat, __ = superMDS(real_points[0, :], N, d, Om=Om, dm=dm)
     else:
         from .mds import iterativeMDS
-        C = kwargs.get('C',None) 
-        b = kwargs.get('b',None) 
+        C = kwargs.get('C', None)
+        b = kwargs.get('b', None)
         if C is None or b is None:
-            raise NameError('Need constraints C and b for reconstruct_emds in iterative mode.')
+            raise NameError(
+                'Need constraints C and b for reconstruct_emds in iterative mode.')
         KE = np.multiply(np.outer(dm, dm), Om)
         Xhat, __ = iterativeMDS(real_points[0, :], N, d, KE=KE, C=C, b=b)
     Y, R, t, c = procrustes(real_points, Xhat, scale=False)
@@ -116,24 +117,15 @@ def reconstruct_sdp(edm, W, lamda, points, print_out=False):
     return Xhat, edm_complete
 
 
-def reconstruct_srls(edm, real_points, print_out=False, indices=[-1], W=None):
+def reconstruct_srls(edm, real_points, print_out=False, indices=[0], W=None):
     """ Reconstruct point set using S(quared)R(ange)L(east)S(quares) method.
     """
+
     from .lateration import SRLS
     Y = real_points.copy()
     for index in indices:
-        anchors = np.delete(real_points, indices, axis=0)
-        r2 = np.delete(edm[index, :], indices)
-        if W is None:
-            W = np.ones(edm.shape)
-        w = np.delete(W[index, :], indices)
-
-        # delete anchors where weight is zero to avoid ill-conditioning
-        missing_anchors = np.where(w == 0.0)
-        w = np.delete(w, missing_anchors)
-        r2 = np.delete(r2, missing_anchors)
-        anchors = np.delete(anchors, missing_anchors, axis=0)
-
+        anchors, w, r2 = get_lateration_parameters(real_points, indices, index,
+                                                   edm, W)
         srls = SRLS(anchors, w, r2, print_out)
         Y[index, :] = srls
     return Y
