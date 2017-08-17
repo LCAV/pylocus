@@ -20,7 +20,7 @@ class TestSRLS(unittest.TestCase):
             self.test_zero_weights(-1, 0.0)
 
     def test_zero_weights(self, index=-1, noise=0.1):
-        from pylocus.basics import create_noisy_edm
+        from pylocus.simulation import create_noisy_edm
         from pylocus.algorithms import reconstruct_srls
         self.pts.set_points(mode='random')
         other = np.delete(range(self.pts.N), index)
