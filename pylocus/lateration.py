@@ -197,15 +197,18 @@ def RLS_SDR(anchors, W, r, print_out=False):
 
     :return: estimated position of point x.
     """
+    from pylocus.basics import low_rank_approximation, eigendecomp
+    from pylocus.mds import x_from_eigendecomp
 
     m = anchors.shape[0]
     d = anchors.shape[1]
 
-    G = Semidef(m + 1)
-    X = Semidef(d + 1)
-
-    constraints = [G[m,m] == 1,
-                   X[d,d] == 1]
+    G = Variable(m+1, m+1)
+    X = Variable(d+1, d+1)
+    constraints = [G[m,m] == 1.0,
+                   X[d,d] == 1.0,
+                   G >> 0, X >> 0,
+                   G == G.T, X == X.T]
     for i in range(m):
         Ci = np.eye(d+1)
         Ci[:-1,-1] = -anchors[i]
@@ -213,13 +216,22 @@ def RLS_SDR(anchors, W, r, print_out=False):
         Ci[-1,-1] = np.linalg.norm(anchors[i])**2
         constraints.append(G[i,i] == trace(Ci*X))
 
-    obj = Minimize(trace(G) - 2*sum_entries(mul_elemwise(r, G[:-1,m])))
+    obj = Minimize(trace(G) - 2*sum_entries(mul_elemwise(r, G[m,:-1].T)))
     prob = Problem(obj, constraints)
 
     ## Solution
-    total = prob.solve()
-    #if (print_out):
-    #    print('total cost:', total)
-    #    print('G:',G.value)
-    #    print('X:',X.value)
-    return 0
+    total = prob.solve(verbose=True)
+    rank_G = np.linalg.matrix_rank(G.value)
+    rank_X = np.linalg.matrix_rank(X.value)
+    if rank_G > 1:
+        u, s, v = np.linalg.svd(G.value, full_matrices=False)
+        print('optimal G is not of rank 1!')
+        print(s)
+    if rank_X > 1:
+        u, s, v = np.linalg.svd(X.value, full_matrices=False)
+        print('optimal X is not of rank 1!')
+        print(s)
+
+    factor, u = eigendecomp(X.value, 1)
+    xhat = x_from_eigendecomp(factor, u, 1)
+    return xhat
