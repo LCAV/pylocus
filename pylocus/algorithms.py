@@ -79,6 +79,28 @@ def reconstruct_emds(edm, Om, real_points, iterative=False, **kwargs):
     return Y
 
 
+def reconstruct_sdms(dm, Om, real_points):
+    """ Reconstruct point set using SDMs.
+    """
+    from pylocus.point_set import *
+    from pylocus.mds import *
+
+    V = get_V(Om, dm)
+
+    dmx = dmi_from_V(points.V, 0)
+    dmy = dmi_from_V(points.V, 1)
+
+    sdmx = sdm_from_dm(dmx, real_points.N)
+    sdmy = sdm_from_dm(dmy, real_points.N)
+
+    points_x = signedMDS(sdmx, W=None)
+    points_y = signedMDS(sdmy, W=None)
+
+    Xhat = np.transpose([points_x, points_y])
+
+    return Xhat
+
+
 def reconstruct_mds(edm, real_points, completion='optspace', mask=None, method='geometric', print_out=False, n=1):
     """ Reconstruct point set using MDS and matrix completion algorithms.
     """
