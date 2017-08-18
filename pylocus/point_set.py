@@ -706,12 +706,12 @@ def edm_from_dm(dm, N):
     return edm
 
 
-def sdm_from_dm(dm, N):
+def sdm_from_dmi(dmi, N):
     triu_idx = np.triu_indices(n=N, m=N, k=1)
 
     # create sdm from distances
     sdm = np.zeros((N, N))
-    sdm[triu_idx[0], triu_idx[1]] = dm
+    sdm[triu_idx[0], triu_idx[1]] = dmi
     sdm = sdm - sdm.T
 
     # assure diagonal is zero
