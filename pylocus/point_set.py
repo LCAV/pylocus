@@ -13,17 +13,11 @@ class PointSet:
 
     :param    self.N: Number of points.
     :param    self.d: Dimension or points (typically 2 or 3).
-    :param    self.T: Number of triangles.
-    :param    self.M: Number of inner angles.
     :param    self.points: Matrix of points (self.N x self.d).
-    :param    self.theta: Vector of inner angles.
-    :param    self.corners: Matrix of corners corresponding to inner angles. Row (k,i,j) corresponds to theta_k(i,j).
-    :param    self.abs_angles: Matrix (self.N x self.N) of absolute angles. Element (i,j) corresponds to absolute angle from origin to ray from point i to point j.
     :param    self.edm: Matrix (self.Nx self.N) of squared distances (Euclidean distance matrix).
     """
 
     def __init__(self, N, d):
-        from scipy.special import binom
         self.N = N
         self.d = d
         self.points = np.empty([self.N, self.d])
@@ -195,31 +189,38 @@ class PointSet:
         plot_points(self.points[range_, :], title, size)
 
 
-class ConstrainedSet(PointSet):
+class AngleSet(PointSet):
     """ Class containing absolute/relative angles and linear constraints.
 
+    :param self.theta: Vector of inner angles.
+    :param self.corners: Matrix of corners corresponding to inner angles. Row (k,i,j) corresponds to theta_k(i,j).
+    :param self.abs_angles: Matrix (self.N x self.N) of absolute angles. Element (i,j) corresponds to absolute angle from origin to ray from point i to point j.
+    :param self.T: Number of triangles.
+    :param self.M: Number of inner angles.
     :param self.C: Number of linear constraints.
     :param self.A: Matrix of constraints (self.C x self.M)
     :param self.b: Vector of constraints (self.C x 1)
     """
 
     def __init__(self, N, d):
+        from scipy import special
         PointSet.__init__(self, N, d)
-        self.C = 1
-        self.A = np.empty((self.C, self.M))
-        self.b = np.empty((self.C, 1))
-        self.T = int(binom(self.N, 3))
+        self.T = self.N*(self.N-1)*(self.N-2)/6
         self.M = int(3 * self.T)
         self.theta = np.empty([self.M, ])
         self.corners = np.empty([self.M, 3])
         self.abs_angles = np.empty([self.N, self.N])
+        self.C = 1
+        self.A = np.empty((self.C, self.M))
+        self.b = np.empty((self.C, 1))
 
     def init(self):
+        PointSet.init(self)
         self.create_abs_angles()
         self.create_theta()
 
     def create_abs_angles(self):
-        from .basics import get_absolute_angle
+        from .basics_angles import get_absolute_angle
         abs_angles = np.empty((self.N, self.N))
         for i in range(self.N):
             for j in range(i, self.N):
@@ -263,7 +264,7 @@ class ConstrainedSet(PointSet):
         Also returns the corners corresponding to each entry of theta.
         """
         import itertools
-        from .basics import from_0_to_pi
+        from .basics_angles import from_0_to_pi
         theta = np.empty((self.M, ))
         corners = np.empty((self.M, 3))
         k = 0
@@ -291,7 +292,7 @@ class ConstrainedSet(PointSet):
 # TODO: Which of the two below should be used?
 
     def get_inner_angle(self, corner, other):
-        from .basics import get_inner_angle
+        from .basics_angles import get_inner_angle
         return get_inner_angle(self.points[corner, :], (
             self.points[other[0], :], self.points[other[1], :]))
 
@@ -301,7 +302,7 @@ class ConstrainedSet(PointSet):
         return self.theta[idx][0]
 
     def get_orientation(k, i, j):
-        from .basics import from_0_to_2pi
+        from .basics_angles import from_0_to_2pi
         """calculate angles theta_ik and theta_jk theta produce point Pk.
         Should give the same as get_absolute_angle! """
         theta_ij = own.abs_angles[i, j]
@@ -390,6 +391,7 @@ class ConstrainedSet(PointSet):
         return T
 
     def get_theta_tensor(self):
+        from pylocus.basics_angles import get_theta_tensor
         self.theta_tensor = get_theta_tensor(self.theta, self.corners, self.N)
         return self.theta_tensor
 

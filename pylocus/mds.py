@@ -4,12 +4,18 @@ import numpy as np
 from .basics import eigendecomp
 
 
+def theta_from_eigendecomp(factor, u):
+    theta_hat = np.dot(np.diag(factor[:]), u.T)
+    theta_hat = theta_hat[0, :]
+    return np.real(theta_hat).reshape((-1,))
+
+
+def x_from_eigendecomp(factor, u, dim):
+    return np.dot(np.diag(factor[:]), u.T)[:dim, :]
+
+
 def MDS(D, dim, method='simple', theta=True):
     N = D.shape[0]
-    def theta_from_eigendecomp(factor, u):
-        theta_hat = np.dot(np.diag(factor[:]), u.T)
-        theta_hat = theta_hat[0, :]
-        return np.real(theta_hat).reshape((-1,))
     if method == 'simple':
         d1 = D[0, :]
         G = -0.5 * (D - d1 * np.ones([1, N]).T - (np.ones([N, 1]) * d1).T)
@@ -17,7 +23,7 @@ def MDS(D, dim, method='simple', theta=True):
         if (theta):
             return theta_from_eigendecomp(factor, u)
         else:
-            return np.dot(np.diag(factor[:]), u.T)[:dim, :]
+            return x_from_eigendecom(factor, u, dim)
     if method == 'advanced':
         s1T = np.vstack([np.ones([1, N]), np.zeros([N - 1, N])])
         G = -0.5 * np.dot(np.dot((np.identity(N) - s1T.T), D),
@@ -26,7 +32,7 @@ def MDS(D, dim, method='simple', theta=True):
         if (theta):
             return theta_from_eigendecomp(factor, u)
         else:
-            return np.dot(np.diag(factor[:]), u.T)[:dim, :]
+            return x_from_eigendecom(factor, u, dim)
     if method == 'geometric':
         J = np.identity(N) - 1.0 / float(N) * np.ones([N, N])
         G = -0.5 * np.dot(np.dot(J, D), J)
@@ -34,16 +40,16 @@ def MDS(D, dim, method='simple', theta=True):
         if (theta):
             return theta_from_eigendecomp(factor, u)
         else:
-            return np.dot(np.diag(factor[:]), u.T)[:dim, :]
+            return x_from_eigendecom(factor, u, dim)
     else:
         print('Unknown method {} in MDS'.format(method))
 
 
 def superMDS(X0, N, d, **kwargs):
-    Om = kwargs.get('Om',None)
-    dm = kwargs.get('dm',None)
+    Om = kwargs.get('Om', None)
+    dm = kwargs.get('dm', None)
     if Om is not None and dm is not None:
-        KE = kwargs.get('KE',None)
+        KE = kwargs.get('KE', None)
         if KE is not None:
             print('superMDS: KE and Om, dm given. Continuing with Om, dm')
         factor, u = eigendecomp(Om, d)
@@ -52,12 +58,12 @@ def superMDS(X0, N, d, **kwargs):
         diag_dm = np.diag(dm)
         Vhat = np.dot(diag_dm, np.dot(uhat, lambdahat))
     elif Om is None or dm is None:
-        KE = kwargs.get('KE',None)
+        KE = kwargs.get('KE', None)
         if KE is None:
             raise NameError('Either KE or Om and dm have to be given.')
         factor, u = eigendecomp(KE, d)
         lambda_ = np.diag(factor)
-        Vhat = np.dot(u,lambda_)[:,:d]
+        Vhat = np.dot(u, lambda_)[:, :d]
 
     C_inv = -np.eye(N)
     C_inv[0, 0] = 1.0
@@ -71,7 +77,7 @@ def superMDS(X0, N, d, **kwargs):
 
 def iterativeMDS(X0, N, d, C, b, max_it=10, print_out=False, **kwargs):
     from pylocus.basics import mse, projection
-    KE = kwargs.get('KE',None)
+    KE = kwargs.get('KE', None)
     KE_projected = KE.copy()
     d = len(X0)
     for i in range(max_it):
@@ -86,7 +92,8 @@ def iterativeMDS(X0, N, d, C, b, max_it=10, print_out=False, **kwargs):
         error = mse(C.dot(KE_projected), b)
 
         if (print_out):
-            print('cost={:2.2e},error={:2.2e}, rank={}'.format(cost, error, rank))
+            print('cost={:2.2e},error={:2.2e}, rank={}'.format(
+                cost, error, rank))
         if cost < 1e-20 and error < 1e-20 and rank == d:
             if (print_out):
                 print('converged after {} iterations'.format(i))
