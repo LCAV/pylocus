@@ -23,7 +23,7 @@ def MDS(D, dim, method='simple', theta=True):
         if (theta):
             return theta_from_eigendecomp(factor, u)
         else:
-            return x_from_eigendecom(factor, u, dim)
+            return x_from_eigendecomp(factor, u, dim)
     if method == 'advanced':
         s1T = np.vstack([np.ones([1, N]), np.zeros([N - 1, N])])
         G = -0.5 * np.dot(np.dot((np.identity(N) - s1T.T), D),
@@ -32,7 +32,7 @@ def MDS(D, dim, method='simple', theta=True):
         if (theta):
             return theta_from_eigendecomp(factor, u)
         else:
-            return x_from_eigendecom(factor, u, dim)
+            return x_from_eigendecomp(factor, u, dim)
     if method == 'geometric':
         J = np.identity(N) - 1.0 / float(N) * np.ones([N, N])
         G = -0.5 * np.dot(np.dot(J, D), J)
@@ -40,7 +40,7 @@ def MDS(D, dim, method='simple', theta=True):
         if (theta):
             return theta_from_eigendecomp(factor, u)
         else:
-            return x_from_eigendecom(factor, u, dim)
+            return x_from_eigendecomp(factor, u, dim)
     else:
         print('Unknown method {} in MDS'.format(method))
 

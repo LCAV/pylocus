@@ -694,31 +694,33 @@ class HeterogenousSet(PointSet):
 
 
 def dm_from_edm(edm):
-    dm = np.triu(edm)
+    from .basics import vector_from_matrix
+    dm = vector_from_matrix(edm)
+    # TODO: make sure this is not necessary.
     dm = np.extract(dm > 0, dm)
     return np.power(dm, 0.5)
 
 
 def edm_from_dm(dm, N):
-    triu_idx = np.triu_indices(n=N, m=N, k=1)
-    # create edm from distances
-    edm = np.zeros((N, N))
-    edm[triu_idx[0], triu_idx[1]] = np.power(dm, 2)
-    edm = edm + edm.T
+    from .basics import matrix_from_vector
+    edm_upper  = matrix_from_vector(dm, N)
+    edm = np.power(edm_upper + edm_upper.T, 2.0)
     return edm
 
 
 def sdm_from_dmi(dmi, N):
-    triu_idx = np.triu_indices(n=N, m=N, k=1)
-
-    # create sdm from distances
-    sdm = np.zeros((N, N))
-    sdm[triu_idx[0], triu_idx[1]] = dmi
-    sdm = sdm - sdm.T
-
+    from .basics import matrix_from_vector
+    sdm_upper = matrix_from_vector(dmi, N)
+    sdm = sdm_upper - sdm_upper.T
     # assure diagonal is zero
     np.fill_diagonal(sdm, 0)
     return sdm
+
+
+def get_V(anglesm, dm):
+    V = np.c_[-np.multiply(np.cos(anglesm), dm),
+              -np.multiply(np.sin(anglesm), dm)]
+    return V
 
 
 def dmi_from_V(V, dimension):

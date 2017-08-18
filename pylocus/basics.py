@@ -127,3 +127,16 @@ def projection(x, A, b):
     cost = mse(x_hat, x)
     constraints_error = mse(A.dot(x_hat), b)
     return x_hat, cost, constraints_error
+
+
+def vector_from_matrix(matrix):
+    N = matrix.shape[0]
+    triu_idx = np.triu_indices(n=N, m=N, k=1)
+    return matrix[triu_idx]
+
+
+def matrix_from_vector(vector, N):
+    triu_idx = np.triu_indices(n=N, m=N, k=1)
+    matrix = np.zeros((N, N))
+    matrix[triu_idx[0], triu_idx[1]] = vector
+    return matrix
