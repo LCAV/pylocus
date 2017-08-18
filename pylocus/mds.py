@@ -95,5 +95,30 @@ def iterativeMDS(X0, N, d, C, b, max_it=10, print_out=False, **kwargs):
     return None, None
 
 
+def signedMDS(sdm, W=None):
+    """ Find the set of points from a sdm.
+    Not all the distances have to be known. They can be noisy  """
+
+    N = sdm.shape[0]
+
+    D_sym = (sdm - sdm.T) / 2
+
+    if W is None:
+        x_est = np.mean(D_sym, axis=1)
+        return x_est - np.min(x_est)
+
+    W_sub = W[1:, 1:]
+    sum_W = np.sum(W[1:, :], axis=1)
+
+    #    A = np.eye(N, N-1, k=-1) - W_sub.astype(np.int) / sum_W[:, None]
+    A = np.eye(N - 1) - W_sub.astype(np.int) / 1. / sum_W[:, None]
+    d = (np.sum(D_sym[1:, :] * W[1:, :], axis=1) / 1. / sum_W)
+
+    x_est = np.linalg.lstsq(A, d)[0]
+    x_est = np.r_[[0], x_est]
+
+    return x_est - np.min(x_est), A, np.linalg.pinv(A)
+
+
 if __name__ == "__main__":
     print('nothing happens when running this module. It is only a container of functions.')
