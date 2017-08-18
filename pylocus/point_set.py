@@ -704,8 +704,26 @@ def edm_from_dm(dm, N):
     # create edm from distances
     edm = np.zeros((N, N))
     edm[triu_idx[0], triu_idx[1]] = np.power(dm, 2)
-    edm = 0.5 * (edm + edm.T)
+    edm = edm + edm.T
     return edm
+
+
+def sdm_from_dmi(dmi, N):
+    triu_idx = np.triu_indices(n=N, m=N, k=1)
+
+    # create sdm from distances
+    sdm = np.zeros((N, N))
+    sdm[triu_idx[0], triu_idx[1]] = dmi
+    sdm = sdm - sdm.T
+
+    # assure diagonal is zero
+    np.fill_diagonal(sdm, 0)
+    return sdm
+
+
+def dmi_from_V(V, dimension):
+    dmi = V[:, dimension]
+    return dmi
 
 
 def create_from_points(points, PointClass):
