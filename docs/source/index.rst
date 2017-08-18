@@ -48,7 +48,7 @@ Module contents
    :nosignatures:
 
    PointSet
-   ConstrainedSet
+   AngleSet
    HeterogenousSet
 
 .. rubric:: Distance Algorithms
