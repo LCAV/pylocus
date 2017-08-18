@@ -11,10 +11,11 @@ from math import pi
 class PointSet:
     """Class describing a typical point configuration.
 
-    :param    self.N: Number of points.
-    :param    self.d: Dimension or points (typically 2 or 3).
-    :param    self.points: Matrix of points (self.N x self.d).
-    :param    self.edm: Matrix (self.Nx self.N) of squared distances (Euclidean distance matrix).
+    :param self.N: Number of points.
+    :param self.d: Dimension or points (typically 2 or 3).
+    :param self.points: Matrix of points (self.N x self.d).
+    :param self.edm: Matrix (self.Nx self.N) of squared distances (Euclidean distance matrix).
+    :param self.abs_angles: Matrix (self.N x self.N) of absolute angles. Element (i,j) corresponds to absolute angle from origin to ray from point i to point j.
     """
 
     def __init__(self, N, d):
@@ -34,6 +35,7 @@ class PointSet:
 
     def init(self):
         self.create_edm()
+        self.create_abs_angles()
 
     def add_noise(self, noise, indices=None):
         if indices is None:
@@ -188,37 +190,6 @@ class PointSet:
         from .plots_cti import plot_points
         plot_points(self.points[range_, :], title, size)
 
-
-class AngleSet(PointSet):
-    """ Class containing absolute/relative angles and linear constraints.
-
-    :param self.theta: Vector of inner angles.
-    :param self.corners: Matrix of corners corresponding to inner angles. Row (k,i,j) corresponds to theta_k(i,j).
-    :param self.abs_angles: Matrix (self.N x self.N) of absolute angles. Element (i,j) corresponds to absolute angle from origin to ray from point i to point j.
-    :param self.T: Number of triangles.
-    :param self.M: Number of inner angles.
-    :param self.C: Number of linear constraints.
-    :param self.A: Matrix of constraints (self.C x self.M)
-    :param self.b: Vector of constraints (self.C x 1)
-    """
-
-    def __init__(self, N, d):
-        from scipy import special
-        PointSet.__init__(self, N, d)
-        self.T = self.N*(self.N-1)*(self.N-2)/6
-        self.M = int(3 * self.T)
-        self.theta = np.empty([self.M, ])
-        self.corners = np.empty([self.M, 3])
-        self.abs_angles = np.empty([self.N, self.N])
-        self.C = 1
-        self.A = np.empty((self.C, self.M))
-        self.b = np.empty((self.C, 1))
-
-    def init(self):
-        PointSet.init(self)
-        self.create_abs_angles()
-        self.create_theta()
-
     def create_abs_angles(self):
         from .basics_angles import get_absolute_angle
         abs_angles = np.empty((self.N, self.N))
@@ -234,6 +205,35 @@ class AngleSet(PointSet):
                         (abs_angles[i, j], abs_angles[j, i],
                          abs_angles[i, j] - abs_angles[j, i])
         self.abs_angles = abs_angles
+
+
+class AngleSet(PointSet):
+    """ Class containing absolute/relative angles and linear constraints.
+
+    :param self.theta: Vector of inner angles.
+    :param self.corners: Matrix of corners corresponding to inner angles. Row (k,i,j) corresponds to theta_k(i,j).
+    :param self.T: Number of triangles.
+    :param self.M: Number of inner angles.
+    :param self.C: Number of linear constraints.
+    :param self.A: Matrix of constraints (self.C x self.M)
+    :param self.b: Vector of constraints (self.C x 1)
+    """
+
+    def __init__(self, N, d):
+        from scipy import special
+        PointSet.__init__(self, N, d)
+        self.T = self.N * (self.N - 1) * (self.N - 2) / 6
+        self.M = int(3 * self.T)
+        self.theta = np.empty([self.M, ])
+        self.corners = np.empty([self.M, 3])
+        self.abs_angles = np.empty([self.N, self.N])
+        self.C = 1
+        self.A = np.empty((self.C, self.M))
+        self.b = np.empty((self.C, 1))
+
+    def init(self):
+        PointSet.init(self)
+        self.create_theta()
 
     def create_abs_angles_from_edm(self):
         #TODO: which one is better?
@@ -290,7 +290,6 @@ class AngleSet(PointSet):
         return theta, corners
 
 # TODO: Which of the two below should be used?
-
     def get_inner_angle(self, corner, other):
         from .basics_angles import get_inner_angle
         return get_inner_angle(self.points[corner, :], (
@@ -682,14 +681,15 @@ class HeterogenousSet(PointSet):
                 k = np.where(self.C[idx_vij_2, :] == -1)[0][0]
                 i_indices = self.C[:, j] == 1
                 j_indices = self.C[:, k] == -1
-                idx_vij_3 = np.where(np.bitwise_and(i_indices, j_indices))[0][0]
+                idx_vij_3 = np.where(np.bitwise_and(
+                    i_indices, j_indices))[0][0]
                 #print('v{}{}, v{}{}, v{}{}\n{}    {}    {}'.format(j,i,k,i,k,j,idx_vij_1,idx_vij_2,idx_vij_3))
                 C2[idx_vij_1, idx_vij_3] = 1
             else:
                 #print('v{}{}, v{}{} not considered.'.format(j,i1,j,i2))
                 to_be_deleted.append(idx_vij_1)
         C2 = np.delete(C2, to_be_deleted, axis=0)
-        b = np.zeros((C2.shape[0],1))
+        b = np.zeros((C2.shape[0], 1))
         return C2, b
 
 
