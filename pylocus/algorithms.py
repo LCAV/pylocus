@@ -79,26 +79,28 @@ def reconstruct_emds(edm, Om, real_points, iterative=False, **kwargs):
     return Y
 
 
-def reconstruct_sdms(dm, Om, real_points):
-    """ Reconstruct point set using SDMs.
+def reconstruct_smds(dm, absolute_angles, real_points, W=None):
+    """ Reconstruct point set using signed Multidimensional Scaling.
     """
-    from pylocus.point_set import *
-    from pylocus.mds import *
+    from pylocus.point_set import dm_from_V, sdm_from_dmi
+    from pylocus.mds import signedMDS
 
-    V = get_V(Om, dm)
+    N = real_points.shape[0]
 
-    dmx = dmi_from_V(points.V, 0)
-    dmy = dmi_from_V(points.V, 1)
+    V = get_V(absolute_angles, dm)
 
-    sdmx = sdm_from_dm(dmx, real_points.N)
-    sdmy = sdm_from_dm(dmy, real_points.N)
+    dmx = dmi_from_V(V, 0)
+    dmy = dmi_from_V(V, 1)
 
-    points_x = signedMDS(sdmx, W=None)
-    points_y = signedMDS(sdmy, W=None)
+    sdmx = sdm_from_dmi(dmx, N)
+    sdmy = sdm_from_dmi(dmy, N)
 
-    Xhat = np.transpose([points_x, points_y])
+    points_x = signedMDS(sdmx, W)
+    points_y = signedMDS(sdmy, W)
 
-    return Xhat
+    Xhat = np.c_[points_x, points_y]
+    Y, R, t, c = procrustes(real_points, Xhat, scale=False)
+    return Y
 
 
 def reconstruct_mds(edm, real_points, completion='optspace', mask=None, method='geometric', print_out=False, n=1):
