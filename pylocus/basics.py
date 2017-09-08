@@ -20,7 +20,13 @@ def rmse(x, xhat):
 
 def low_rank_approximation(A, r):
     """ Returns approximation of A of rank r in least-squares sense."""
-    u, s, v = np.linalg.svd(A, full_matrices=False)
+    try:
+        u, s, v = np.linalg.svd(A, full_matrices=False)
+    except np.linalg.LinAlgError as e:
+        print('Matrix:', A)
+        print('Matrix rank:',np.linalg.matrix_rank(A))
+        raise
+
     Ar = np.zeros((len(u), len(v)))
     for i in range(r):
         Ar += s[i] * np.outer(u.T[i], v[i])

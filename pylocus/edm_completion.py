@@ -66,7 +66,7 @@ def rank_alternation(edm_missing, rank, niter=50, print_out=False, edm_true=None
     return edm_complete, errs
 
 
-def semidefinite_relaxation(edm, W, lamda, print_out=False):
+def semidefinite_relaxation(edm_missing, lamda, W=None, print_out=False):
     from .algorithms import reconstruct_mds
     def kappa(gram):
         n = len(gram)
@@ -77,7 +77,10 @@ def semidefinite_relaxation(edm, W, lamda, print_out=False):
         e = np.ones((n, 1))
         return diag(gram) * e.T + e * diag(gram).T - 2 * gram
 
-    n = edm.shape[0]
+    if W is None:
+        W = (edm_missing > 0)
+
+    n = edm_missing.shape[0]
     V = np.c_[-np.ones(n - 1) / np.sqrt(n), np.eye(n - 1) -
               np.ones([n - 1, n - 1]) / (n + np.sqrt(n))].T
 
@@ -86,7 +89,7 @@ def semidefinite_relaxation(edm, W, lamda, print_out=False):
     G = V * H * V.T  # * is overloaded
     edm_optimize = kappa_cvx(G, n)
 
-    obj = Maximize(trace(H) - lamda * norm(mul_elemwise(W, (edm_optimize - edm))))
+    obj = Maximize(trace(H) - lamda * norm(mul_elemwise(W, (edm_optimize - edm_missing))))
     prob = Problem(obj)
 
     ## Solution
@@ -100,7 +103,7 @@ def semidefinite_relaxation(edm, W, lamda, print_out=False):
     # TODO why do these two not sum up to the objective?
     if (print_out):
         print('trace of H:', np.trace(H.value))
-        print('other cost:', lamda * norm(mul_elemwise(W, (edm_complete - edm))).value)
+        print('other cost:', lamda * norm(mul_elemwise(W, (edm_complete - edm_missing))).value)
 
     return edm_complete
     # TODO: why does this not work?

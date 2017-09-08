@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 # module PLOTS_CTI
 import matplotlib.pyplot as plt
+import matplotlib as mpl
 import numpy as np
 
 from .settings import *
@@ -158,7 +159,7 @@ def plot_point_sets_3d(point_sets, names, title='', display_lines=False):
     plt.show()
 
 
-def plot_points(points, title, size=[5, 2], filename=''):
+def plot_points(points, title, size=[5, 2], filename='', axis='off'):
     if DARK:
         color = (0.2, 0.6, 0.1)
     else:
@@ -176,7 +177,7 @@ def plot_points(points, title, size=[5, 2], filename=''):
     for i in range(N):
         ax.annotate('%s' % i, xy=(
             points[i, 0], points[i, 1]), textcoords='data')
-    plt.axis('off')
+    plt.axis(axis)
     #plt.legend(legend, loc='best')
     f.set_size_inches(size)
     plt.title(title)
@@ -230,20 +231,25 @@ def create_multispan_plots(tag_ids):
     return fig, ax_dict, ax_total
 
 
-def plot_matrix(matrix, title='matrix', yticks=None, saveas='', norm=''):
+def plot_matrix(matrix, title='matrix', yticks=None, saveas='', norm='', ax=None):
     from mpl_toolkits.axes_grid1 import make_axes_locatable
-    fig = plt.figure(figsize=(5, 5))
-    ax = plt.subplot(111)
+    if ax is None:
+        fig = plt.figure(figsize=(5, 5))
+        ax = plt.subplot(111)
 
     divider = make_axes_locatable(ax)
     cax = divider.append_axes('right', size='5%', pad=0.05)
 
     if norm != '':
-        im = ax.imshow(matrix, interpolation='none', norm=norm)
+        if norm == 'log':
+            norm_mpl = mpl.colors.LogNorm()
+        else:
+            raise NotImplementedError('Unknown norm parameter.')
+        im = ax.imshow(matrix, interpolation='none', norm=norm_mpl)
     else:
         im = ax.imshow(matrix, interpolation='none')
 
-    fig.colorbar(im, cax=cax)
+    plt.colorbar(im, cax=cax)
     ax.set_title(title)
 
     if yticks is not None:

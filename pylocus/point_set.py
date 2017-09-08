@@ -182,9 +182,9 @@ class PointSet:
         from .basics import get_edm
         self.edm = get_edm(self.points)
 
-    def plot_all(self, title='', size=[5, 2], filename=''):
+    def plot_all(self, title='', size=[5, 2], filename='', axis='off'):
         from .plots_cti import plot_points
-        plot_points(self.points, title, size, filename)
+        plot_points(self.points, title, size, filename, axis)
 
     def plot_some(self, range_, title='', size=[5, 2]):
         from .plots_cti import plot_points
