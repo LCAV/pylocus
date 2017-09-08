@@ -3,6 +3,45 @@
 import numpy as np
 
 
+def execute_method(method, noisy_edm=None, real_points=None, W=None, **kwargs):
+    lamda = 1000
+    if method == 'MDS':
+        xhat = reconstruct_mds(
+            noisy_edm, real_points=real_points, method='geometric')
+    if method == 'MDSoptspace':
+        xhat = reconstruct_mds(noisy_edm, real_points=real_points,
+                               method='geometric', mask=W,
+                               completion='optspace', print_out=False)
+    if method == 'MDSalternate':
+        xhat = reconstruct_mds(noisy_edm, real_points=real_points,
+                               method='geometric', mask=W,
+                               completion='alternate', print_out=False)
+    if method == 'SDR':
+        x_SDRold, EDMbest = reconstruct_sdp(
+            noisy_edm, W, lamda, real_points)
+        ### Added to avoid strange "too large to be a matrix" error
+        N, d = real_points.shape
+        xhat = np.zeros((N, d))
+        xhat[:, :] = x_SDRold
+    if method == 'ACD':
+        X0 = kwargs.get('X0', None)
+        xhat, fs, err_edms, err_points = reconstruct_acd(noisy_edm, W=W, X0=X0.copy(),
+                                                         real_points=real_points)
+    if method == 'dwMDS':
+        X0 = kwargs.get('X0', None)
+        X_bar = kwargs.get('X_bar', None)
+        r = kwargs.get('r', None)
+        n = kwargs.get('n', None)
+        xhat, costs = reconstruct_dwmds(noisy_edm, X0=X0.copy(), W=W, n=n,
+                                        X_bar=X_bar, r=r)
+    if method == 'SRLS':
+        n = kwargs.get('n', None)
+        print('in SRLS:', n)
+        xhat = reconstruct_srls(noisy_edm, real_points,
+                                indices=range(n), W=W)
+    return xhat
+
+
 def classical_mds(D):
     from .mds import MDS
     return MDS(D, 1, 'geometric')
@@ -120,8 +159,7 @@ def reconstruct_sdp(edm, W, lamda, points, print_out=False):
 def reconstruct_srls(edm, real_points, print_out=False, indices=[0], W=None):
     """ Reconstruct point set using S(quared)R(ange)L(east)S(quares) method.
     """
-
-    from .lateration import SRLS
+    from .lateration import SRLS, get_lateration_parameters
     Y = real_points.copy()
     for index in indices:
         anchors, w, r2 = get_lateration_parameters(real_points, indices, index,
