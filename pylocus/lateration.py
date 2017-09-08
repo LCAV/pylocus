@@ -18,10 +18,14 @@ def get_lateration_parameters(real_points, indices, index, edm, W=None):
     w = np.delete(W[index, :], indices)
 
     # delete anchors where weight is zero to avoid ill-conditioning
-    missing_anchors = np.where(w == 0.0)
-    w = np.delete(w, missing_anchors)
-    r2 = np.delete(r2, missing_anchors)
+    missing_anchors = np.where(w == 0.0)[0]
+    w = np.asarray(np.delete(w, missing_anchors))
+    r2 = np.asarray(np.delete(r2, missing_anchors))
+    w.resize(edm.shape[0]-len(indices)-len(missing_anchors), 1)
+    r2.resize(edm.shape[0]-len(indices)-len(missing_anchors), 1)
+    assert w.shape == r2.shape
     anchors = np.delete(anchors, missing_anchors, axis=0)
+    assert w.shape[0] == anchors.shape[0]
     return anchors, w, r2
 
 
@@ -37,7 +41,10 @@ def SRLS(anchors, W, r2, print_out=False):
     '''
     def y_hat(_lambda):
         lhs = ATA + _lambda * D
-        rhs = (np.dot(A.T, b).reshape((-1, 1)) - _lambda * f).reshape((-1,))
+        assert A.shape[0] == b.shape[0]
+        assert A.shape[1] == f.shape[0], 'A {}, f {}'.format(A.shape, f.shape)
+        rhs = (np.dot(A.T, b) - _lambda * f).reshape((-1,))
+        assert lhs.shape[0] == rhs.shape[0], 'lhs {}, rhs {}'.format(lhs.shape, rhs.shape)
         return np.linalg.solve(lhs, rhs)
 
     def phi(_lambda):
@@ -50,10 +57,10 @@ def SRLS(anchors, W, r2, print_out=False):
     n = anchors.shape[0]
     d = anchors.shape[1]
     A = np.c_[-2 * anchors, np.ones((n, 1))]
-    Sigma = np.diag(np.power(W, 0.5))
+    Sigma = np.diagflat(np.power(W, 0.5))
     A = Sigma.dot(A)
     ATA = np.dot(A.T, A)
-    b = r2 - np.power(np.linalg.norm(anchors, axis=1), 2)
+    b = r2 - np.power(np.linalg.norm(anchors, axis=1), 2).reshape(r2.shape)
     b = Sigma.dot(b)
     D = np.zeros((d + 1, d + 1))
     D[:d, :d] = np.eye(d)
@@ -111,6 +118,7 @@ def SRLS(anchors, W, r2, print_out=False):
     #assert_print(phi(lambda_opt), 1e-6)
 
     lhs = np.dot(A.T, A) + lambda_opt * D
+    assert A.shape[0] == b.shape[0]
     rhs = (np.dot(A.T, b).reshape((-1, 1)) - lambda_opt * f).reshape((-1,))
     assert_all_print(np.dot(lhs, yhat) - rhs, 1e-6)
     eig = np.array(np.linalg.eigvals(ATA + lambda_opt * D))
