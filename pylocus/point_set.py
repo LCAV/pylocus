@@ -658,8 +658,9 @@ class HeterogenousSet(PointSet):
         for i in range(self.m):
             for j in range(self.m):
                 if i != j:
+                    norm = np.linalg.norm(self.V[i, :]) * np.linalg.norm(self.V[j, :])
                     cos_inner_angle = np.dot(self.V[i, :], self.V[
-                                             j, :]) / (np.linalg.norm(self.V[i, :]) * np.linalg.norm(self.V[j, :]))
+                                             j, :]) / norm
                 else:
                     cos_inner_angle = 1.0
                 self.Om[i, j] = cos_inner_angle
@@ -736,8 +737,8 @@ def create_from_points(points, PointClass):
 
 
 def return_noisy_points(noise, indices, points):
-    points[indices,
-           :] += np.random.normal(0, noise, (len(indices), points.shape[1]))
+    d = points.shape[1]
+    points[indices, :] += np.random.normal(0, noise, (len(indices), d))
     return points
 
 

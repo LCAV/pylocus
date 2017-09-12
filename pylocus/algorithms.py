@@ -72,7 +72,12 @@ def procrustes(anchors, X, scale=True, print_out=False):
     muy = 1 / m * np.dot(ones.T, anchors)
     sigmax = 1 / m * np.linalg.norm(X_m - mux)**2
     sigmaxy = 1 / m * np.dot((anchors - muy).T, X_m - mux)
-    U, D, VT = np.linalg.svd(sigmaxy)
+    try:
+        U, D, VT = np.linalg.svd(sigmaxy)
+    except np.LinAlgError:
+        print('strange things are happening...')
+        print(sigmaxy)
+        print(np.linalg.matrix_rank(sigmaxy))
     #this doesn't work and doesn't seem to be necessary! (why?)
     #  S = np.eye(D.shape[0])
     #  if (np.linalg.det(U)*np.linalg.det(VT.T) < 0):
@@ -121,7 +126,7 @@ def reconstruct_emds(edm, Om, real_points, iterative=False, **kwargs):
 def reconstruct_smds(dm, absolute_angles, real_points, W=None):
     """ Reconstruct point set using signed Multidimensional Scaling.
     """
-    from pylocus.point_set import dm_from_V, sdm_from_dmi
+    from pylocus.point_set import dmi_from_V, sdm_from_dmi, get_V
     from pylocus.mds import signedMDS
 
     N = real_points.shape[0]
