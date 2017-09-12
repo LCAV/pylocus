@@ -193,6 +193,8 @@ def reconstruct_srls(edm, real_points, print_out=False, indices=[0], W=None):
     for index in indices:
         anchors, w, r2 = get_lateration_parameters(real_points, indices, index,
                                                    edm, W)
+        if print_out:
+            print('SRLS parameters:',anchors, w, r2)
         srls = SRLS(anchors, w, r2, print_out)
         Y[index, :] = srls
     return Y
