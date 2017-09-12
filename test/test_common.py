@@ -25,14 +25,29 @@ class BaseCommon:
 
         def test_multiple(self):
             print('TestCommon:test_multiple')
-            for i in range(3):
+            for i in range(100):
                 self.test_zero_noise()
+                self.test_zero_noise_soft()
 
         def test_zero_noise(self):
             print('TestCommon:test_zero_noise')
+            for N in range(8, 12):
+                for d in (2, 3):
+                    self.create_points(N, d)
+                    points_estimate = self.call_method()
+                    error = np.linalg.norm(self.pts.points - points_estimate) 
+                    self.assertTrue(error < 1e-10, 'error: {}, points:{}'.format(error, self.pts.points))
+
+        def test_zero_noise_soft(self):
+            success = 0
+            total = 0
             for N in range(4, 10):
                 for d in (2, 3):
                     self.create_points(N, d)
                     points_estimate = self.call_method()
                     error = np.linalg.norm(self.pts.points - points_estimate) 
-                    self.assertTrue(error < 1e-10, 'noiseless case did not give 0 error:{}'.format(error))
+                    if error < 1e-10:
+                        success +=1
+                    total +=1
+            rate = success/total*100
+            self.assertTrue(rate > 50., 'noiseless success rate below 50%: {}'.format(rate))
