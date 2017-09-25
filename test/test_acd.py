@@ -7,6 +7,7 @@ from test_common import BaseCommon
 
 from pylocus.point_set import PointSet
 from pylocus.algorithms import reconstruct_acd
+from pylocus.simulation import create_noisy_edm
 
 class TestACD(BaseCommon.TestAlgorithms):
     def setUp(self):
@@ -27,6 +28,9 @@ class TestACD(BaseCommon.TestAlgorithms):
                                     X0=self.pts.points,
                                     print_out=False, n_it=3)
         return Xhat
+
+    def add_noise(self, noise=1e-6):
+        self.pts.edm = create_noisy_edm(self.pts.edm, noise)
 
 
 if __name__ == "__main__":
