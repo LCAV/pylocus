@@ -298,6 +298,7 @@ def reconstruct_dwmds(edm, X0, W=None, n=None, r=None, X_bar=None, print_out=Fal
     X_k = X0.copy()
     
     costs = []
+
     # don't have to ignore i=j, because W[i,i] is zero.
     a = np.sum(W[:n, :n], axis=1).flatten() + 2 * \
         np.sum(W[:n, n:], axis=1).flatten()
