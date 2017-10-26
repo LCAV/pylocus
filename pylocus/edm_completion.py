@@ -79,6 +79,8 @@ def semidefinite_relaxation(edm_missing, lamda, W=None, print_out=False):
 
     if W is None:
         W = (edm_missing > 0)
+    else:
+        W[edm_missing == 0] = 0.0
 
     n = edm_missing.shape[0]
     V = np.c_[-np.ones(n - 1) / np.sqrt(n), np.eye(n - 1) -
@@ -90,19 +92,27 @@ def semidefinite_relaxation(edm_missing, lamda, W=None, print_out=False):
     edm_optimize = kappa_cvx(G, n)
 
     obj = Maximize(trace(H) - lamda * norm(mul_elemwise(W, (edm_optimize - edm_missing))))
+    #obj = Minimize(trace(H) + lamda * norm(mul_elemwise(W, (edm_optimize - edm_missing))))
     prob = Problem(obj)
 
     ## Solution
-    total = prob.solve()
+    total = prob.solve(solver='SCS', eps=1e-5)
+    #total = prob.solve(solver='CVXOPT', abstol=1e-5, reltol=1e-6, feastol=1e-7, verbose=True)
     if (print_out):
         print('total cost:', total)
 
-    Gbest = V * H.value * V.T
-    edm_complete = kappa(Gbest)
+    print('SDP status:',prob.status)
+    if H.value is not None:
+        Gbest = V * H.value * V.T
+        print('eigenvalues:',np.sum(np.linalg.eigvals(Gbest)[2:]))
+        edm_complete = kappa(Gbest)
+    else:
+        edm_complete = edm_missing
 
     # TODO why do these two not sum up to the objective?
     if (print_out):
-        print('trace of H:', np.trace(H.value))
+        if H.value is not None:
+            print('trace of H:', np.trace(H.value))
         print('other cost:', lamda * norm(mul_elemwise(W, (edm_complete - edm_missing))).value)
 
     return edm_complete

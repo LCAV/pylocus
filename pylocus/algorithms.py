@@ -4,7 +4,6 @@ import numpy as np
 
 
 def execute_method(method, noisy_edm=None, real_points=None, W=None, **kwargs):
-    lamda = 1000
     if method == 'MDS':
         xhat = reconstruct_mds(
             noisy_edm, real_points=real_points, method='geometric')
@@ -18,7 +17,7 @@ def execute_method(method, noisy_edm=None, real_points=None, W=None, **kwargs):
                                completion='alternate', print_out=False)
     if method == 'SDR':
         x_SDRold, EDMbest = reconstruct_sdp(
-            noisy_edm, W, lamda, real_points)
+            noisy_edm, W=W, real_points=real_points)
         ### Added to avoid strange "too large to be a matrix" error
         N, d = real_points.shape
         xhat = np.zeros((N, d))
@@ -100,25 +99,31 @@ def procrustes(anchors, X, scale=True, print_out=False):
     return X_transformed, R, t, c
 
 
-def reconstruct_emds(edm, Om, real_points, iterative=False, **kwargs):
+def reconstruct_emds(edm, Om, real_points, method=None, **kwargs):
     """ Reconstruct point set using E(dge)-MDS.
     """
     from .point_set import dm_from_edm
     N = real_points.shape[0]
     d = real_points.shape[1]
     dm = dm_from_edm(edm)
-    if not iterative:
+    if method is None:
         from .mds import superMDS
         Xhat, __ = superMDS(real_points[0, :], N, d, Om=Om, dm=dm)
     else:
-        from .mds import iterativeMDS
         C = kwargs.get('C', None)
         b = kwargs.get('b', None)
         if C is None or b is None:
             raise NameError(
                 'Need constraints C and b for reconstruct_emds in iterative mode.')
-        KE = np.multiply(np.outer(dm, dm), Om)
-        Xhat, __ = iterativeMDS(real_points[0, :], N, d, KE=KE, C=C, b=b)
+        KE_noisy = np.multiply(np.outer(dm, dm), Om)
+        if method == 'iterative':
+            from .mds import iterativeEMDS
+            Xhat, __ = iterativeMDS(real_points[0, :], N, d, KE=KE_noisy, C=C, b=b)
+        elif method == 'relaxed':
+            from .mds import relaxedEMDS
+            Xhat, __ = relaxedEMDS(real_points[0, :], N, d, KE=KE_noisy, C=C, b=b)
+        else:
+            raise NameError('Undefined method', method)
     Y, R, t, c = procrustes(real_points, Xhat, scale=False)
     return Y
 
@@ -176,12 +181,12 @@ def reconstruct_mds(edm, real_points, completion='optspace', mask=None, method='
     return Y
 
 
-def reconstruct_sdp(edm, W, lamda, points, print_out=False):
+def reconstruct_sdp(edm, W, real_points, print_out=False, lamda=1000):
     """ Reconstruct point set using semi-definite rank relaxation.
     """
     from .edm_completion import semidefinite_relaxation
-    edm_complete = semidefinite_relaxation(edm, W, lamda, print_out)
-    Xhat = reconstruct_mds(edm_complete, points, method='geometric')
+    edm_complete = semidefinite_relaxation(edm, lamda, W, print_out)
+    Xhat = reconstruct_mds(edm_complete, real_points, method='geometric')
     return Xhat, edm_complete
 
 
