@@ -5,7 +5,7 @@ point-to-point distances and angles.
 
 import numpy as np
 from .settings import *
-from math import pi
+from math import pi, acos, cos, sin
 
 
 class PointSet:
@@ -41,7 +41,6 @@ class PointSet:
         if indices is None:
             indices = range(self.N)
         self.points = return_noisy_points(noise, indices, self.points.copy())
-        self.init()
 
     def set_points(self, mode, points=None, range_=RANGE, size=1):
         """ Initialize points according to predefined modes.
@@ -334,7 +333,7 @@ class AngleSet(PointSet):
         theta_jk = from_0_to_2pi(theta_jk)
         return theta_ik, theta_jk
 
-    def return_noisy(self, noise, mode='noisy', idx=0, visualize=False):
+    def return_noisy(self, noise, mode='normal', idx=0, visualize=False):
         if mode == 'normal':
             theta = self.theta.copy() + np.random.normal(0, noise, self.M)
             if (visualize):
@@ -354,7 +353,6 @@ class AngleSet(PointSet):
 
 
 # TODO: where do I need the three below?
-
     def get_tensor_edm(self):
         D = np.empty([self.N * self.d, self.N * self.d])
         for i in range(self.N):
@@ -370,7 +368,6 @@ class AngleSet(PointSet):
         return D
 
     def get_closed_form(self, edm):
-        #TODO: what is this?
         Daug = self.get_tensor_edm()
         T = np.empty([self.N, self.N, self.N])
         for i in range(self.N):
@@ -394,8 +391,7 @@ class AngleSet(PointSet):
         self.theta_tensor = get_theta_tensor(self.theta, self.corners, self.N)
         return self.theta_tensor
 
-# TODO: This is for iterative algorithm only...
-
+    # TODO: This is for iterative algorithm only...
     def get_indices(self, k):
         """ Get indices of theta vector that have k as first corner.
         
@@ -440,31 +436,30 @@ class AngleSet(PointSet):
                 G[jdx, idx] = cos(thetak_ij)
         return G
 
-# TODO: Which of these two is better? And should they really be in this class?
-
+    # TODO: Which of these two is better? And should they really be in this class?
     def reconstruct_from_inner_angles(self, theta):
-        from .algorithms import reconstruct_from_inner_angles
+        from .aloc import reconstruct_from_inner_angles
         from .algorithms import procrustes
+        from pylocus.basics_angles import get_theta_tensor
+
         theta_tensor = get_theta_tensor(theta, self.corners, self.N)
         reconstruction = reconstruct_from_inner_angles(
             self.points[0, :], self.points[1, :], self.abs_angles[0, 2],
             self.abs_angles[1, 2], theta_tensor)
-        new_points, __, __, __ = procrustes(
-            self.points, reconstruction.points, scale=True)
-        reconstruction.points = new_points
-        reconstruction.init()
+        #new_points, __, __, __ = procrustes(
+        #    self.points, reconstruction.points, scale=True)
+        #reconstruction.points = new_points
+        #reconstruction.init()
         return reconstruction
 
-    def reconstruct(self, theta):
-        from .algorithms import reconstruct
-        i = 0
-        j = 1
+    def reconstruct(self, theta, i=0, j=1, k=2):
+        from .aloc import reconstruct
+        from pylocus.basics_angles import get_theta_tensor
         theta_tensor = get_theta_tensor(theta, self.corners, self.N)
         Pi = self.points[i, :]
         Pj = self.points[j, :]
-        k = 2
         Pk = self.points[k, :]
-        reconstruction = reconstruct(Pi, Pj, i, j, theta_tensor, Pk, k)
+        reconstruction = reconstruct(Pi, Pj, i, j, theta_tensor, Pk, k, print_out=False)
         return reconstruction
 
     def get_convex_polygons(self, m, print_out=False):
@@ -473,6 +468,7 @@ class AngleSet(PointSet):
         
         :return: (ordered) indices of all convex polygones of size m.
         """
+        import itertools
         convex_polygons = []
         for corners in itertools.combinations(np.arange(self.N), m):
             p = np.zeros(m, np.uint)
@@ -516,6 +512,7 @@ class AngleSet(PointSet):
         
         :return A, b: the constraints on the theta-vector of the form A*theta = b
         """
+        from .basics_angles import get_index
         rows_A = []
         rows_b = []
         for m in range_polygones:
@@ -530,6 +527,7 @@ class AngleSet(PointSet):
         return self.A, self.b
 
     def get_angle_constraints_m(self, polygons_m, print_out=False):
+        from .basics_angles import get_index
         rows = []
         m = len(polygons_m[0])
         # initialization to empty led to A being filled with first row of
@@ -587,6 +585,7 @@ class AngleSet(PointSet):
 
         :return A, b: the constraints on the theta-vector of the form A*theta = b
         """
+        from .basics_angles import get_index
         rows_b = []
         rows_A = []
         m = len(polygons_m[0])
@@ -616,6 +615,12 @@ class AngleSet(PointSet):
         self.A = A
         self.b = b
         return A, b
+
+    def copy(self):
+        new = AngleSet(self.N, self.d)
+        new.points = self.points.copy()
+        new.init()
+        return new
 
 
 class HeterogenousSet(PointSet):
@@ -692,6 +697,12 @@ class HeterogenousSet(PointSet):
         C2 = np.delete(C2, to_be_deleted, axis=0)
         b = np.zeros((C2.shape[0], 1))
         return C2, b
+
+    def copy(self):
+        new = HeterogenousSet(self.N, self.d)
+        new.points = self.points.copy()
+        new.init()
+        return new
 
 
 def dm_from_edm(edm):

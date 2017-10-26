@@ -52,26 +52,21 @@ def procrustes(anchors, X, scale=True, print_out=False):
     
     :return: the transformed vector X, the rotation matrix, translation vector, and scaling factor.
     """
-    def centralize(X):
-        n = X.shape[0]
-        ones = np.ones((n, 1))
-        return X - np.multiply(1 / n * np.dot(ones.T, X), ones)
     m = anchors.shape[0]
-    N, d = X.shape
-    assert m >= d, 'Have to give at least d anchor nodes.'
-    X_m = X[N - m:, :]
     ones = np.ones((m, 1))
+    center_points, center_anchors, points_to_fit  = get_centers(X, anchors)
 
-    mux = 1 / m * np.dot(ones.T, X_m)
-    muy = 1 / m * np.dot(ones.T, anchors)
-    sigmax = 1 / m * np.linalg.norm(X_m - mux)**2
-    sigmaxy = 1 / m * np.dot((anchors - muy).T, X_m - mux)
+    sigmax = 1 / m * np.linalg.norm(points_to_fit - center_points)**2
+    sigmaxy = 1 / m * np.dot((anchors - center_anchors).T, points_to_fit - center_points)
     try:
         U, D, VT = np.linalg.svd(sigmaxy)
-    except np.LinAlgError:
+    except np.linalg.LinAlgError:
         print('strange things are happening...')
-        print(sigmaxy)
-        print(np.linalg.matrix_rank(sigmaxy))
+        print('anchors',anchors)
+        print('X',X)
+        print('sigma',sigmaxy)
+        print('rank',np.linalg.matrix_rank(sigmaxy))
+        raise
     #this doesn't work and doesn't seem to be necessary! (why?)
     #  S = np.eye(D.shape[0])
     #  if (np.linalg.det(U)*np.linalg.det(VT.T) < 0):
@@ -89,9 +84,26 @@ def procrustes(anchors, X, scale=True, print_out=False):
             print('Optimal scale would be: {}. Setting it to 1 now.'.format(c))
         c = 1.0
     R = np.dot(U, VT)
-    t = muy.T - c * np.dot(R, mux.T)
-    X_transformed = (c * np.dot(R, (X - mux).T) + muy.T).T
+    t = center_anchors.T - c * np.dot(R, center_points.T)
+    X_transformed = apply_transform(R, t, c, X, anchors)
     return X_transformed, R, t, c
+
+
+def get_centers(X, anchors):
+    N, d = X.shape
+    m = anchors.shape[0]
+    ones = np.ones((m, 1))
+    assert m >= d, 'Have to give at least d anchor nodes.'
+
+    points_to_fit = X[N - m:, :]
+    center_points = 1 / m * np.dot(ones.T, points_to_fit)
+    center_anchors = 1 / m * np.dot(ones.T, anchors)
+    return center_points, center_anchors, points_to_fit 
+
+
+def apply_transform(R, t, c, X, anchors):
+    center_points, center_anchors, points_to_fit  = get_centers(X, anchors)
+    return (c * np.dot(R, (X - center_points).T) + center_anchors.T).T
 
 
 def reconstruct_emds(edm, Om, real_points, method=None, **kwargs):
