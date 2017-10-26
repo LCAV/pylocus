@@ -70,10 +70,10 @@ def eigendecomp(G, d):
     lamda = np.real(lamda)
     lamda_sorted = lamda[indices]
     assert (lamda_sorted[
-            :d] > -1e-10).all(), "{} not all positive!".format(lamda_sorted[:d])
-
+            :d] > -1e-3).all(), "{} not all positive!".format(lamda_sorted)
     u = u[:, indices]
     factor = np.zeros((N,))
+    lamda_sorted[lamda_sorted < 0] = 0.0
     factor[0:d] = np.sqrt(lamda_sorted[:d])
     return np.real(factor), np.real(u)
 
@@ -147,3 +147,5 @@ def matrix_from_vector(vector, N):
     matrix = np.zeros((N, N))
     matrix[triu_idx[0], triu_idx[1]] = vector
     return matrix
+
+
