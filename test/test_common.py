@@ -8,10 +8,16 @@ from abc import *
 
 class BaseCommon:
     ''' Empty class such that TestCommon is not run as a test class.
-    BaseCommon is abstract and needs to be run through the inheriting classes.
+    TestAlgorithms is abstract and needs to be run through the inheriting classes.
     '''
 
     class TestAlgorithms(ABC, unittest.TestCase):
+        def setUp(self):
+            self.eps = 1e-10
+            self.success_rate = 50
+            self.n_it = 100
+            self.N_zero = range(8, 12)
+            self.N_relaxed = range(4, 10)
 
         @abstractmethod
         def create_points(self, N, d):
@@ -25,29 +31,30 @@ class BaseCommon:
 
         def test_multiple(self):
             print('TestCommon:test_multiple')
-            for i in range(100):
+            for i in range(self.n_it):
                 self.test_zero_noise()
-                self.test_zero_noise_soft()
+                self.test_zero_noise_relaxed()
 
         def test_zero_noise(self):
             print('TestCommon:test_zero_noise')
-            for N in range(8, 12):
+            for N in self.N_zero:
                 for d in (2, 3):
                     self.create_points(N, d)
                     points_estimate = self.call_method()
                     error = np.linalg.norm(self.pts.points - points_estimate) 
-                    self.assertTrue(error < 1e-10, 'error: {}, points:{}'.format(error, self.pts.points))
+                    self.assertTrue(error < self.eps, 'error: {} not smaller than {}'.format(error, self.eps))
 
-        def test_zero_noise_soft(self):
+        def test_zero_noise_relaxed(self):
+            print('TestCommon:test_zero_noise_relaxed')
             success = 0
             total = 0
-            for N in range(4, 10):
+            for N in self.N_relaxed:
                 for d in (2, 3):
                     self.create_points(N, d)
                     points_estimate = self.call_method()
                     error = np.linalg.norm(self.pts.points - points_estimate) 
-                    if error < 1e-10:
+                    if error < self.eps:
                         success +=1
                     total +=1
             rate = success/total*100
-            self.assertTrue(rate > 50., 'noiseless success rate below 50%: {}'.format(rate))
+            self.assertTrue(rate > self.success_rate, 'noiseless success rate below {}: {}'.format(self.success_rate, rate))
