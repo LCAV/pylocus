@@ -66,7 +66,7 @@ def rank_alternation(edm_missing, rank, niter=50, print_out=False, edm_true=None
     return edm_complete, errs
 
 
-def semidefinite_relaxation(edm_missing, lamda, W=None, print_out=False):
+def semidefinite_relaxation(edm_missing, lamda, W=None, print_out=False, **kwargs):
     from .algorithms import reconstruct_mds
     def kappa(gram):
         n = len(gram)
@@ -77,8 +77,14 @@ def semidefinite_relaxation(edm_missing, lamda, W=None, print_out=False):
         e = np.ones((n, 1))
         return diag(gram) * e.T + e * diag(gram).T - 2 * gram
 
+    method = kwargs.pop('method', 'maximize')
+    options = {'solver' : 'SCS'}
+    options.update(kwargs)
+
     if W is None:
         W = (edm_missing > 0)
+    else:
+        W[edm_missing == 0] = 0.0
 
     n = edm_missing.shape[0]
     V = np.c_[-np.ones(n - 1) / np.sqrt(n), np.eye(n - 1) -
@@ -89,20 +95,30 @@ def semidefinite_relaxation(edm_missing, lamda, W=None, print_out=False):
     G = V * H * V.T  # * is overloaded
     edm_optimize = kappa_cvx(G, n)
 
-    obj = Maximize(trace(H) - lamda * norm(mul_elemwise(W, (edm_optimize - edm_missing))))
+    if method == 'maximize':
+        obj = Maximize(trace(H) - lamda * norm(mul_elemwise(W, (edm_optimize - edm_missing))))
+    elif method == 'minimize':
+        obj = Minimize(trace(H) + lamda * norm(mul_elemwise(W, (edm_optimize - edm_missing))))
+
     prob = Problem(obj)
 
-    ## Solution
-    total = prob.solve()
-    if (print_out):
+    total = prob.solve(**options)
+    if print_out:
         print('total cost:', total)
+        print('SDP status:',prob.status)
 
-    Gbest = V * H.value * V.T
-    edm_complete = kappa(Gbest)
+    if H.value is not None:
+        Gbest = V * H.value * V.T
+        if print_out:
+            print('eigenvalues:',np.sum(np.linalg.eigvals(Gbest)[2:]))
+        edm_complete = kappa(Gbest)
+    else:
+        edm_complete = edm_missing
 
     # TODO why do these two not sum up to the objective?
     if (print_out):
-        print('trace of H:', np.trace(H.value))
+        if H.value is not None:
+            print('trace of H:', np.trace(H.value))
         print('other cost:', lamda * norm(mul_elemwise(W, (edm_complete - edm_missing))).value)
 
     return edm_complete

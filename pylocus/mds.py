@@ -1,6 +1,8 @@
 #!/usr/bin/env python
 # module MDS
 import numpy as np
+from cvxpy import *
+
 from .basics import eigendecomp
 
 
@@ -75,14 +77,14 @@ def superMDS(X0, N, d, **kwargs):
     return Xhat, Vhat
 
 
-def iterativeMDS(X0, N, d, C, b, max_it=10, print_out=False, **kwargs):
+def iterativeEMDS(X0, N, d, C, b, max_it=10, print_out=False, **kwargs):
     from pylocus.basics import mse, projection
     KE = kwargs.get('KE', None)
     KE_projected = KE.copy()
     d = len(X0)
     for i in range(max_it):
         # projection on constraints
-        KE_projected, cost, error = projection(KE_projected, C, b)
+        KE_projected, cost, __ = projection(KE_projected, C, b)
         rank = np.linalg.matrix_rank(KE_projected)
 
         # rank 2 decomposition
@@ -98,8 +100,38 @@ def iterativeMDS(X0, N, d, C, b, max_it=10, print_out=False, **kwargs):
             if (print_out):
                 print('converged after {} iterations'.format(i))
             return Xhat_KE, Vhat_KE
-    print('did not converge!')
+    print('iterativeMDS did not converge!')
     return None, None
+
+
+def relaxedEMDS(X0, N, d, C, b, KE, print_out=False, lamda=10):
+    E = C.shape[1]
+    X = Semidef(E)
+
+    constraints = [C[i, :] * X == b[i] for i in range(C.shape[0])]
+
+    obj = Minimize(trace(X) + lamda * norm(KE - X))
+    prob = Problem(obj, constraints)
+
+    try:
+        # CVXOPT is more accurate than SCS, even though slower.
+        total_cost = prob.solve(solver='CVXOPT', verbose=print_out)
+    except:
+        try:
+            print('CVXOPT with default cholesky failed. Trying kktsolver...')
+            # kktsolver is more robust than default (cholesky), even though slower.
+            total_cost = prob.solve(solver='CVXOPT', verbose=print_out, kktsolver="robust")
+        except:
+            try:
+                print('CVXOPT with robust kktsovler failed. Trying SCS...')
+                # SCS is fast and robust, but inaccurate (last choice).
+                total_cost = prob.solve(solver='SCS', verbose=print_out)
+            except:
+                print('SCS and CVXOPT solver with default and kktsolver failed .')
+    if print_out:
+        print('status:', prob.status)
+    Xhat_KE, Vhat_KE = superMDS(X0, N, d, KE=X.value)
+    return Xhat_KE, Vhat_KE
 
 
 def signedMDS(sdm, W=None):
