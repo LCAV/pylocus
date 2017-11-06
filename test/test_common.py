@@ -53,10 +53,11 @@ class BaseCommon:
             for N in self.N_relaxed:
                 for d in (2, 3):
                     self.create_points(N, d)
-                    points_estimate = self.call_method()
-                    error = np.linalg.norm(self.pts.points - points_estimate) 
-                    if error < self.eps:
-                        success +=1
-                    total +=1
+                    for method in self.methods: 
+                        points_estimate = self.call_method(method)
+                        error = np.linalg.norm(self.pts.points - points_estimate) 
+                        if error < self.eps:
+                            success +=1
+                        total +=1
             rate = success/total*100
             self.assertTrue(rate > self.success_rate, 'noiseless success rate below {}: {}'.format(self.success_rate, rate))

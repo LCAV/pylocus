@@ -203,7 +203,7 @@ def reconstruct_srls(edm, real_points, W=None, print_out=False, n=1):
     return Y
 
 
-def reconstruct_acd(edm, X0, W=None, print_out=False, tol=1e-10):
+def reconstruct_acd(edm, X0, W=None, print_out=False, tol=1e-10, sweeps=100):
     """ Reconstruct point set using alternating coordinate descent.
 
     :param X0: Nxd matrix of starting points.
@@ -230,7 +230,6 @@ def reconstruct_acd(edm, X0, W=None, print_out=False, tol=1e-10):
         X_k[i, coord] += delta
         cost_this = f(X_k, edm, W)
         costs.append(cost_this)
-        coords.append(X_k[i])
 
         if delta <= tol:
             coordinates_converged[i, coord] += 1
@@ -238,9 +237,6 @@ def reconstruct_acd(edm, X0, W=None, print_out=False, tol=1e-10):
             if print_out:
                 print('======= coordinate {} of {} not yet converged'.format(coord, i))
             coordinates_converged[i, coord] = 0
-        if len(costs) > 2:
-            assert costs[-1] <= costs[-2] + \
-                tol, 'non decreasing cost function detected!:{},{}'.format(costs[-1], costs[-2])
 
     def loop_point(i):
         coord_counter = 0
@@ -257,17 +253,17 @@ def reconstruct_acd(edm, X0, W=None, print_out=False, tol=1e-10):
 
     from .point_set import create_from_points, PointSet
     from .distributed_mds import get_step_size, f
+
     N, d = X0.shape
     if W is None:
-        W = np.ones((N, N))
+        W = np.ones((N,N)) - np.eye(N)
 
     X_k = X0.copy()
 
     costs = []
-    coords = []
     coordinates_converged = np.zeros(X_k.shape)
     coord_n_it = 10
-    for sweep_counter in range(10):
+    for sweep_counter in range(sweeps):
         if print_out:
             print('= sweep',sweep_counter)
         sweep()
@@ -275,14 +271,16 @@ def reconstruct_acd(edm, X0, W=None, print_out=False, tol=1e-10):
             if (print_out):
                 print('acd: all coordinates converged after {} sweeps.'.format(
                     sweep_counter))
-            return X_k, costs, coords
+            return X_k, costs
     if (print_out):
         print('acd: did not converge after {} sweeps'.format(sweep_counter + 1))
-    return X_k, costs, coords
+    return X_k, costs
 
 
-def reconstruct_dwmds(edm, X0, W=None, n=None, r=None, X_bar=None, max_iter=100, tol=1e-10, print_out=False):
+def reconstruct_dwmds(edm, X0, W=None, n=None, r=None, X_bar=None, print_out=False, tol=1e-10, sweeps=100):
     """ Reconstruct point set using d(istributed)w(eighted) MDS.
+
+    :param X0: Nxd matrix of starting points.
     """
     from .basics import get_edm
     from .distributed_mds import get_b, get_Si
@@ -292,34 +290,36 @@ def reconstruct_dwmds(edm, X0, W=None, n=None, r=None, X_bar=None, max_iter=100,
         raise ValueError('either r or n have to be given.')
     elif n is None:
         n = r.shape[0]
+    
+    if W is None:
+        W = np.ones((N,N)) - np.eye(N)
 
+    X_k = X0.copy()
+    
     costs = []
-    X = X0.copy()
-
     # don't have to ignore i=j, because W[i,i] is zero.
     a = np.sum(W[:n, :n], axis=1).flatten() + 2 * \
         np.sum(W[:n, n:], axis=1).flatten()
     if r is not None:
         a += r.flatten()
-    for k in range(max_iter):
+    for k in range(sweeps):
         S = 0
         for i in range(n):
-            edm_estimated = get_edm(X)
+            edm_estimated = get_edm(X_k)
             bi = get_b(i, edm_estimated, W, edm, n)
             if r is not None and X_bar is not None:
-                X[i] = 1 / a[i] * (r[i] * X_bar[i, :] + X.T.dot(bi).flatten())
-                Si = get_Si(i, edm_estimated, edm, W, n, r, X_bar[i], X[i])
+                X_k[i] = 1 / a[i] * (r[i] * X_bar[i, :] + X_k.T.dot(bi).flatten())
+                Si = get_Si(i, edm_estimated, edm, W, n, r, X_bar[i], X_k[i])
             else:
-                X[i] = 1 / a[i] * X.T.dot(bi).flatten()
+                X_k[i] = 1 / a[i] * X_k.T.dot(bi).flatten()
                 Si = get_Si(i, edm_estimated, edm, W, n)
             S += Si
         costs.append(S)
         if k > 1 and abs(costs[-1] - costs[-2]) < tol:
             if (print_out):
                 print('dwMDS: converged after', k)
-                print('dwMDS: costs:', costs)
             break
-    return X, costs
+    return X_k, costs
 
 
 if __name__ == "__main__":

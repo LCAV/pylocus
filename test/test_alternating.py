@@ -9,35 +9,45 @@ from pylocus.point_set import PointSet
 from pylocus.algorithms import reconstruct_dwmds, reconstruct_acd
 
 
-class TestACD(BaseCommon.TestAlgorithms):
+def call_method(edm, X0, tol, method=''):
+    if method == 'ACD':
+        print('TestAlternating:call_method',method)
+        Xhat, costs = reconstruct_acd(edm, X0=X0, print_out=False, tol=tol)
+    elif method == 'dwMDS':
+        print('TestAlternating:call_method',method)
+        Xhat, costs = reconstruct_dwmds(edm, X0=X0, n=1, print_out=False, tol=tol)
+    return Xhat, costs
+
+
+class TestAlternating(BaseCommon.TestAlgorithms):
     def setUp(self):
-        print('TestACD:setUp')
+        print('TestAlternating:setUp')
         BaseCommon.TestAlgorithms.setUp(self)
         self.n_it = 10
-        self.N_zero = [5]
-        self.N_relaxed = [5]
         self.eps = 1e-8
+        self.methods = ['dwMDS', 'ACD']
 
     def create_points(self, N=10, d=3):
-        print('TestACD:create_points')
+        print('TestAlternating:create_points')
         self.pts = PointSet(N, d)
         self.pts.set_points('normal')
-        self.X0 = self.pts.points + np.random.normal(1.0, size=self.pts.points.shape)
+        self.X0 = self.pts.points.copy() + \
+            np.random.normal(scale=self.eps*0.01, size=self.pts.points.shape)
 
     def call_method(self, method=''):
-        print('TestACD:call_method')
-        tol = 1e-5
-        Xhat, __, __ = reconstruct_acd(self.pts.edm, X0=self.X0, print_out=False, tol=tol)
+        Xhat, __ = call_method(self.pts.edm, X0=self.X0, tol=self.eps, method=method)
         return Xhat
 
-    def test_decreasing_cost(self, method=''):
-        tol = 1e-5
+    def test_decreasing_cost(self):
         self.create_points()
-        __, costs, __ = reconstruct_acd(self.pts.edm, X0=self.X0, print_out=False, tol=tol)
-        cprev = np.inf
-        for c in costs:
-            self.assertTrue(c <= cprev+tol, 'c: {}, cprev:{}'.format(c, cprev))
-            cprev = c
+        for method in self.methods:
+            Xhat, costs = call_method(self.pts.edm, X0=self.X0, tol=self.eps, method=method)
+            cprev = np.inf
+            for c in costs:
+                self.assertTrue(c <= cprev + self.eps,
+                                'c: {}, cprev:{}'.format(c, cprev))
+                cprev = c
+
 
 if __name__ == "__main__":
     unittest.main()
