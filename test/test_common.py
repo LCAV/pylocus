@@ -18,6 +18,7 @@ class BaseCommon:
             self.n_it = 100
             self.N_zero = range(8, 12)
             self.N_relaxed = range(4, 10)
+            self.methods = ['']
 
         @abstractmethod
         def create_points(self, N, d):
@@ -25,7 +26,7 @@ class BaseCommon:
                 'Call to virtual method! create_points has to be defined by sublcasses!')
 
         @abstractmethod
-        def call_method(self):
+        def call_method(self, method=''):
             raise NotImplementedError(
                 'Call to virtual method! call_method has to be defined by sublcasses!')
 
@@ -39,10 +40,11 @@ class BaseCommon:
             print('TestCommon:test_zero_noise')
             for N in self.N_zero:
                 for d in (2, 3):
-                    self.create_points(N, d)
-                    points_estimate = self.call_method()
-                    error = np.linalg.norm(self.pts.points - points_estimate) 
-                    self.assertTrue(error < self.eps, 'error: {} not smaller than {}'.format(error, self.eps))
+                    self.create_points(N, d) 
+                    for method in self.methods: 
+                        points_estimate = self.call_method(method)
+                        error = np.linalg.norm(self.pts.points - points_estimate) 
+                        self.assertTrue(error < self.eps, 'error: {} not smaller than {}'.format(error, self.eps))
 
         def test_zero_noise_relaxed(self):
             print('TestCommon:test_zero_noise_relaxed')

@@ -118,7 +118,7 @@ def reconstruct_emds(edm, Om, real_points, method=None, **kwargs):
         KE_noisy = np.multiply(np.outer(dm, dm), Om)
         if method == 'iterative':
             from .mds import iterativeEMDS
-            Xhat, __ = iterativeMDS(
+            Xhat, __ = iterativeEMDS(
                 real_points[0, :], N, d, KE=KE_noisy, C=C, b=b)
         elif method == 'relaxed':
             from .mds import relaxedEMDS

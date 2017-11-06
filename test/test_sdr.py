@@ -12,6 +12,7 @@ from pylocus.algorithms import reconstruct_sdp
 class TestSDP(BaseCommon.TestAlgorithms):
     def setUp(self):
         print('TestSDP:setUp')
+        BaseCommon.TestAlgorithms.setUp(self)
         self.eps = 1e-8
         self.success_rate = 50
         self.n_it = 1
@@ -23,7 +24,7 @@ class TestSDP(BaseCommon.TestAlgorithms):
         self.pts = PointSet(N, d)
         self.pts.set_points('normal')
 
-    def call_method(self):
+    def call_method(self, method=''):
         print('TestSDP:call_method')
         Xhat, edm = reconstruct_sdp(self.pts.edm, real_points=self.pts.points,
                                     solver='SCS', eps=1e-10, method='maximize')

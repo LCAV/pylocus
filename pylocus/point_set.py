@@ -740,7 +740,3 @@ def return_noisy_points(noise, indices, points):
     d = points.shape[1]
     points[indices, :] += np.random.normal(0, noise, (len(indices), d))
     return points
-
-
-if __name__ == "__main__":
-    print('running module point_configuration.py')
