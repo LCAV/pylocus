@@ -18,7 +18,7 @@ def execute_method(method, noisy_edm=None, real_points=None, W=None, **kwargs):
     if method == 'SDR':
         x_SDRold, EDMbest = reconstruct_sdp(
             noisy_edm, W=W, real_points=real_points)
-        ### Added to avoid strange "too large to be a matrix" error
+        # Added to avoid strange "too large to be a matrix" error
         N, d = real_points.shape
         xhat = np.zeros((N, d))
         xhat[:, :] = x_SDRold
@@ -118,10 +118,12 @@ def reconstruct_emds(edm, Om, real_points, method=None, **kwargs):
         KE_noisy = np.multiply(np.outer(dm, dm), Om)
         if method == 'iterative':
             from .mds import iterativeEMDS
-            Xhat, __ = iterativeMDS(real_points[0, :], N, d, KE=KE_noisy, C=C, b=b)
+            Xhat, __ = iterativeMDS(
+                real_points[0, :], N, d, KE=KE_noisy, C=C, b=b)
         elif method == 'relaxed':
             from .mds import relaxedEMDS
-            Xhat, __ = relaxedEMDS(real_points[0, :], N, d, KE=KE_noisy, C=C, b=b)
+            Xhat, __ = relaxedEMDS(
+                real_points[0, :], N, d, KE=KE_noisy, C=C, b=b)
         else:
             raise NameError('Undefined method', method)
     Y, R, t, c = procrustes(real_points, Xhat, scale=False)
@@ -181,16 +183,16 @@ def reconstruct_mds(edm, real_points, completion='optspace', mask=None, method='
     return Y
 
 
-def reconstruct_sdp(edm, W, real_points, print_out=False, lamda=1000):
+def reconstruct_sdp(edm, real_points, W=None, print_out=False, lamda=1000, **kwargs):
     """ Reconstruct point set using semi-definite rank relaxation.
     """
     from .edm_completion import semidefinite_relaxation
-    edm_complete = semidefinite_relaxation(edm, lamda, W, print_out)
+    edm_complete = semidefinite_relaxation(edm, lamda=lamda, W=W, print_out=print_out, **kwargs)
     Xhat = reconstruct_mds(edm_complete, real_points, method='geometric')
     return Xhat, edm_complete
 
 
-def reconstruct_srls(edm, real_points, print_out=False, indices=[0], W=None):
+def reconstruct_srls(edm, real_points, W=None, print_out=False, indices=[0]):
     """ Reconstruct point set using S(quared)R(ange)L(east)S(quares) method.
     """
     from .lateration import SRLS, get_lateration_parameters
@@ -199,7 +201,7 @@ def reconstruct_srls(edm, real_points, print_out=False, indices=[0], W=None):
         anchors, w, r2 = get_lateration_parameters(real_points, indices, index,
                                                    edm, W)
         if print_out:
-            print('SRLS parameters:',anchors, w, r2)
+            print('SRLS parameters:', anchors, w, r2)
         srls = SRLS(anchors, w, r2, print_out)
         Y[index, :] = srls
     return Y

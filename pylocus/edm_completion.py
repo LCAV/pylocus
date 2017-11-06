@@ -66,7 +66,7 @@ def rank_alternation(edm_missing, rank, niter=50, print_out=False, edm_true=None
     return edm_complete, errs
 
 
-def semidefinite_relaxation(edm_missing, lamda, W=None, print_out=False):
+def semidefinite_relaxation(edm_missing, lamda, W=None, print_out=False, **kwargs):
     from .algorithms import reconstruct_mds
     def kappa(gram):
         n = len(gram)
@@ -76,6 +76,10 @@ def semidefinite_relaxation(edm_missing, lamda, W=None, print_out=False):
     def kappa_cvx(gram, n):
         e = np.ones((n, 1))
         return diag(gram) * e.T + e * diag(gram).T - 2 * gram
+
+    method = kwargs.pop('method', 'maximize')
+    options = {'solver' : 'SCS'}
+    options.update(kwargs)
 
     if W is None:
         W = (edm_missing > 0)
@@ -91,20 +95,22 @@ def semidefinite_relaxation(edm_missing, lamda, W=None, print_out=False):
     G = V * H * V.T  # * is overloaded
     edm_optimize = kappa_cvx(G, n)
 
-    obj = Maximize(trace(H) - lamda * norm(mul_elemwise(W, (edm_optimize - edm_missing))))
-    #obj = Minimize(trace(H) + lamda * norm(mul_elemwise(W, (edm_optimize - edm_missing))))
+    if method == 'maximize':
+        obj = Maximize(trace(H) - lamda * norm(mul_elemwise(W, (edm_optimize - edm_missing))))
+    elif method == 'minimize':
+        obj = Minimize(trace(H) + lamda * norm(mul_elemwise(W, (edm_optimize - edm_missing))))
+
     prob = Problem(obj)
 
-    ## Solution
-    total = prob.solve(solver='SCS', eps=1e-5)
-    #total = prob.solve(solver='CVXOPT', abstol=1e-5, reltol=1e-6, feastol=1e-7, verbose=True)
-    if (print_out):
+    total = prob.solve(**options)
+    if print_out:
         print('total cost:', total)
+        print('SDP status:',prob.status)
 
-    print('SDP status:',prob.status)
     if H.value is not None:
         Gbest = V * H.value * V.T
-        print('eigenvalues:',np.sum(np.linalg.eigvals(Gbest)[2:]))
+        if print_out:
+            print('eigenvalues:',np.sum(np.linalg.eigvals(Gbest)[2:]))
         edm_complete = kappa(Gbest)
     else:
         edm_complete = edm_missing
