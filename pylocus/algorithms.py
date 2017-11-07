@@ -203,7 +203,7 @@ def reconstruct_srls(edm, real_points, W=None, print_out=False, n=1):
     return Y
 
 
-def reconstruct_acd(edm, X0, W=None, print_out=False, tol=1e-10, sweeps=100):
+def reconstruct_acd(edm, X0, W=None, print_out=False, tol=1e-10, sweeps=10):
     """ Reconstruct point set using alternating coordinate descent.
 
     :param X0: Nxd matrix of starting points.
@@ -262,7 +262,7 @@ def reconstruct_acd(edm, X0, W=None, print_out=False, tol=1e-10, sweeps=100):
 
     costs = []
     coordinates_converged = np.zeros(X_k.shape)
-    coord_n_it = 10
+    coord_n_it = 3
     for sweep_counter in range(sweeps):
         if print_out:
             print('= sweep',sweep_counter)
@@ -281,6 +281,7 @@ def reconstruct_dwmds(edm, X0, W=None, n=None, r=None, X_bar=None, print_out=Fal
     """ Reconstruct point set using d(istributed)w(eighted) MDS.
 
     :param X0: Nxd matrix of starting points.
+    :param n: Number of points of unknown position. The first n points in X0 and edm are considered unknown. 
     """
     from .basics import get_edm
     from .distributed_mds import get_b, get_Si
