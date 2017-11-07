@@ -12,10 +12,11 @@ def mse(x, xhat):
 def rmse(x, xhat):
     """ Calcualte rmse between vector or matrix x and xhat """
     ms_error = mse(x, xhat)
-    if ms_error:
-        return sqrt(ms_error)
-    else:
-        return 0
+    return sqrt(ms_error)
+
+
+def norm(x, xhat):
+    return sqrt(np.sum(np.power(x - xhat, 2)))
 
 
 def low_rank_approximation(A, r):
@@ -24,7 +25,7 @@ def low_rank_approximation(A, r):
         u, s, v = np.linalg.svd(A, full_matrices=False)
     except np.linalg.LinAlgError as e:
         print('Matrix:', A)
-        print('Matrix rank:',np.linalg.matrix_rank(A))
+        print('Matrix rank:', np.linalg.matrix_rank(A))
         raise
 
     Ar = np.zeros((len(u), len(v)))

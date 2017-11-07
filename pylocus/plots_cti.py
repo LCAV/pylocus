@@ -39,7 +39,12 @@ def plot_tag_position(point_sets, title='', size=[10, 10], filename='', names=No
 
     legend = []
     for p, points in enumerate(point_sets):
-        N = points.shape[0]
+        try:
+            N = points.shape[0]
+        except:
+            N = len(points)
+        if N == 0:
+            break
         if p == 0:
             for i in range(N):
                 pi = points[i]
