@@ -24,20 +24,14 @@ def execute_method(method, noisy_edm=None, real_points=None, W=None, **kwargs):
         xhat[:, :] = x_SDRold
     if method == 'ACD':
         X0 = kwargs.get('X0', None)
-        xhat, fs, err_edms, err_points = reconstruct_acd(noisy_edm, W=W, X0=X0.copy(),
-                                                         real_points=real_points)
+        xhat, costs = reconstruct_acd(noisy_edm, W=W, X0=X0)
     if method == 'dwMDS':
-        X0 = kwargs.get('X0', None)
-        X_bar = kwargs.get('X_bar', None)
-        r = kwargs.get('r', None)
-        n = kwargs.get('n', None)
-        xhat, costs = reconstruct_dwmds(noisy_edm, X0=X0.copy(), W=W, n=n,
-                                        X_bar=X_bar, r=r)
+        X0 = kwargs.pop('X0', None)
+        xhat, costs = reconstruct_dwmds(noisy_edm, W=W, X0=X0, **kwargs)
     if method == 'SRLS':
         n = kwargs.get('n', None)
-        print('in SRLS:', n)
         xhat = reconstruct_srls(noisy_edm, real_points,
-                                indices=range(n), W=W)
+                                n=n, W=W)
     return xhat
 
 
@@ -187,16 +181,18 @@ def reconstruct_sdp(edm, real_points, W=None, print_out=False, lamda=1000, **kwa
     """ Reconstruct point set using semi-definite rank relaxation.
     """
     from .edm_completion import semidefinite_relaxation
-    edm_complete = semidefinite_relaxation(edm, lamda=lamda, W=W, print_out=print_out, **kwargs)
+    edm_complete = semidefinite_relaxation(
+        edm, lamda=lamda, W=W, print_out=print_out, **kwargs)
     Xhat = reconstruct_mds(edm_complete, real_points, method='geometric')
     return Xhat, edm_complete
 
 
-def reconstruct_srls(edm, real_points, W=None, print_out=False, indices=[0]):
+def reconstruct_srls(edm, real_points, W=None, print_out=False, n=1):
     """ Reconstruct point set using S(quared)R(ange)L(east)S(quares) method.
     """
     from .lateration import SRLS, get_lateration_parameters
     Y = real_points.copy()
+    indices = range(n)
     for index in indices:
         anchors, w, r2 = get_lateration_parameters(real_points, indices, index,
                                                    edm, W)
@@ -207,82 +203,85 @@ def reconstruct_srls(edm, real_points, W=None, print_out=False, indices=[0]):
     return Y
 
 
-def reconstruct_acd(edm, W, X0, real_points, print_out=False, tol=1e-10):
+def reconstruct_acd(edm, X0, W=None, print_out=False, tol=1e-10, sweeps=10):
     """ Reconstruct point set using alternating coordinate descent.
+
+    :param X0: Nxd matrix of starting points.
     """
+
+    def get_unique_delta(delta, i, coord):
+        if len(delta) > 1:
+            print('found multiple deltas')
+            ftest = []
+            for de in delta:
+                X_ktest = X_k.copy()
+                X_ktest[i, coord] += de
+                ftest.append(f(X_ktest, edm, W))
+            delta = delta[ftest == min(ftest)]
+        return delta
+
+    def sweep():
+        for i in range(N):
+            loop_point(i)
+
+    def loop_coordinate(coord, i):
+        delta = get_step_size(i, coord, X_k, edm, W)
+        delta = get_unique_delta(delta, i, coord)
+        X_k[i, coord] += delta
+        cost_this = f(X_k, edm, W)
+        costs.append(cost_this)
+
+        if delta <= tol:
+            coordinates_converged[i, coord] += 1
+        else:
+            if print_out:
+                print('======= coordinate {} of {} not yet converged'.format(coord, i))
+            coordinates_converged[i, coord] = 0
+
+    def loop_point(i):
+        coord_counter = 0
+        while not (coordinates_converged[i] >= 2).all():
+            if print_out:
+                print('==== point {}'.format(i))
+            coord_counter += 1
+            for coord in range(d):
+                if print_out:
+                    print('======= coord {}'.format(coord))
+                loop_coordinate(coord, i)
+            if coord_counter > coord_n_it:
+                break
+
     from .point_set import create_from_points, PointSet
     from .distributed_mds import get_step_size, f
+
+    N, d = X0.shape
+    if W is None:
+        W = np.ones((N,N)) - np.eye(N)
+
     X_k = X0.copy()
-    N = X_k.shape[0]
-    d = X_k.shape[1]
 
-    # create reference object
-    preal = create_from_points(real_points, PointSet)
-    # create optimization object
-    cd = create_from_points(X_k, PointSet)
-
-    fs = []
-    err_edms = []
-    err_points = []
-    done = False
-
-    coord_n_it = 10
-
-    coordinates_converged = np.ones(N) * coord_n_it
-    for sweep_counter in range(100):
-        # sweep
-        for i in np.where(coordinates_converged > 1)[0]:
-            coord_counter = 0
-            while coord_counter < coord_n_it:
-                coord_counter += 1
-                for coord in range(d):
-                    delt = get_step_size(i, coord, X_k, edm, W)
-                    if len(delt) > 1:
-                        ftest = []
-                        for de in delt:
-                            X_ktest = X_k.copy()
-                            X_ktest[i, coord] += de
-                            ftest.append(f(X_ktest, edm, W))
-                        delt = delt[ftest == min(ftest)]
-                    X_k[i, coord] += delt
-                    f_this = f(X_k, edm, W)
-                    fs.append(f_this)
-                    cd.points = X_k
-                    cd.init()
-                    err_edms.append(np.linalg.norm(cd.edm - edm))
-                    err_points.append(np.linalg.norm(X_k - preal.points))
-                    if len(fs) > 2:
-                        if abs(fs[-1] - fs[-2]) < tol:
-                            if (print_out):
-                                print(fs[-1])
-                                print(fs[-2])
-                                print('acd: coordinate converged after {} loops.'.format(
-                                    coord_counter))
-                            if coord_counter == 1:
-                                if coord_counter > coordinates_converged[i]:
-                                    print(
-                                        'Unexpected behavior: Coordinate converged in more than before')
-                            coordinates_converged[i] = coord_counter
-                            coord_counter = coord_n_it
-                            break
-                        else:
-                            pass
-                            #print('error:',abs(fs[-1] - fs[-2]))
-        if (coordinates_converged == 1).all():
+    costs = []
+    coordinates_converged = np.zeros(X_k.shape)
+    coord_n_it = 3
+    for sweep_counter in range(sweeps):
+        if print_out:
+            print('= sweep',sweep_counter)
+        sweep()
+        if (coordinates_converged >= 2).all():
             if (print_out):
                 print('acd: all coordinates converged after {} sweeps.'.format(
                     sweep_counter))
-            return X_k, fs, err_edms, err_points
-        else:
-            if (print_out):
-                print('acd: not yet converged:', coordinates_converged)
+            return X_k, costs
     if (print_out):
         print('acd: did not converge after {} sweeps'.format(sweep_counter + 1))
-    return X_k, fs, err_edms, err_points
+    return X_k, costs
 
 
-def reconstruct_dwmds(edm, X0, W, r=None, n=None, X_bar=None, max_iter=100, tol=1e-10, print_out=False):
+def reconstruct_dwmds(edm, X0, W=None, n=None, r=None, X_bar=None, print_out=False, tol=1e-10, sweeps=100):
     """ Reconstruct point set using d(istributed)w(eighted) MDS.
+
+    :param X0: Nxd matrix of starting points.
+    :param n: Number of points of unknown position. The first n points in X0 and edm are considered unknown. 
     """
     from .basics import get_edm
     from .distributed_mds import get_b, get_Si
@@ -292,34 +291,36 @@ def reconstruct_dwmds(edm, X0, W, r=None, n=None, X_bar=None, max_iter=100, tol=
         raise ValueError('either r or n have to be given.')
     elif n is None:
         n = r.shape[0]
+    
+    if W is None:
+        W = np.ones((N,N)) - np.eye(N)
 
+    X_k = X0.copy()
+    
     costs = []
-    X = X0.copy()
-
     # don't have to ignore i=j, because W[i,i] is zero.
     a = np.sum(W[:n, :n], axis=1).flatten() + 2 * \
         np.sum(W[:n, n:], axis=1).flatten()
     if r is not None:
         a += r.flatten()
-    for k in range(max_iter):
+    for k in range(sweeps):
         S = 0
         for i in range(n):
-            edm_estimated = get_edm(X)
+            edm_estimated = get_edm(X_k)
             bi = get_b(i, edm_estimated, W, edm, n)
             if r is not None and X_bar is not None:
-                X[i] = 1 / a[i] * (r[i] * X_bar[i, :] + X.T.dot(bi).flatten())
-                Si = get_Si(i, edm_estimated, edm, W, n, r, X_bar[i], X[i])
+                X_k[i] = 1 / a[i] * (r[i] * X_bar[i, :] + X_k.T.dot(bi).flatten())
+                Si = get_Si(i, edm_estimated, edm, W, n, r, X_bar[i], X_k[i])
             else:
-                X[i] = 1 / a[i] * X.T.dot(bi).flatten()
+                X_k[i] = 1 / a[i] * X_k.T.dot(bi).flatten()
                 Si = get_Si(i, edm_estimated, edm, W, n)
             S += Si
         costs.append(S)
         if k > 1 and abs(costs[-1] - costs[-2]) < tol:
             if (print_out):
                 print('dwMDS: converged after', k)
-                print('dwMDS: costs:', costs)
             break
-    return X, costs
+    return X_k, costs
 
 
 if __name__ == "__main__":
