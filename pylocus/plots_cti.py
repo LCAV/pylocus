@@ -217,23 +217,30 @@ def create_multispan_plots(tag_ids):
     """
     import matplotlib.gridspec as gridspec
     fig = plt.figure()
-    gs = gridspec.GridSpec(2, len(tag_ids))
+    nrows = 1
+    if len(tag_ids) > 1:
+        nrows = 2
+    fig.set_size_inches(10, 5*nrows)
+
+    gs = gridspec.GridSpec(nrows, len(tag_ids))
     ax_list = [fig.add_subplot(g) for g in gs]
     ax_dict = {}
     for i, tag_dict in enumerate(tag_ids):
         ax_dict[tag_dict['id']] = ax_list[i]
-    ax_total = plt.subplot(gs[1, :])
-
-    fig.set_size_inches(10, 10)
-    for tag_dict in tag_ids:
         ax_dict[tag_dict['id']].set_title(
             'System {} (id {})'.format(tag_dict['name'], tag_dict['id']))
-    title = 'Combined {}'.format(tag_ids[0]['name'])
-    for i in range(1, len(tag_ids)):
-        title = title + ' and {}'.format(tag_ids[i]['name'])
-    ax_total.set_title(title)
+
+    if nrows > 1:
+        ax_total = plt.subplot(gs[1, :])
+
+        title = 'Combined {}'.format(tag_ids[0]['name'])
+        for i in range(1, len(tag_ids)):
+            title = title + ' and {}'.format(tag_ids[i]['name'])
+        ax_total.set_title(title)
+        gs.tight_layout(fig, rect=[0, 0.03, 1, 0.95])
+        return fig, ax_dict, ax_total
     gs.tight_layout(fig, rect=[0, 0.03, 1, 0.95])
-    return fig, ax_dict, ax_total
+    return fig, ax_dict, None
 
 
 def plot_matrix(matrix, title='matrix', yticks=None, saveas='', norm='', ax=None):
