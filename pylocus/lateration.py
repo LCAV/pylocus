@@ -11,15 +11,23 @@ from cvxpy import *
 def get_lateration_parameters(real_points, indices, index, edm, W=None):
     """ Get parameters relevant for lateration from full real_points, edm and W.
     """
+    if W is None:
+        W = np.ones(edm.shape)
+
     # delete points that are not considered anchors
     anchors = np.delete(real_points, indices, axis=0)
     r2 = np.delete(edm[index, :], indices)
-    if W is None:
-        W = np.ones(edm.shape)
     w = np.delete(W[index, :], indices)
 
     # set w to zero where measurements are invalid
-    no_measurements = np.where(r2 == 0.0)[0]
+    if np.isnan(r2).any():
+        nan_measurements = np.where(np.isnan(r2))[0]
+        r2[nan_measurements] = 0.0
+        w[nan_measurements] = 0.0
+    if np.isnan(w).any():
+        nan_measurements = np.where(np.isnan(w))[0]
+        r2[nan_measurements] = 0.0
+        w[nan_measurements] = 0.0
 
     # delete anchors where weight is zero to avoid ill-conditioning
     missing_anchors = np.where(w == 0.0)[0]
@@ -27,9 +35,10 @@ def get_lateration_parameters(real_points, indices, index, edm, W=None):
     r2 = np.asarray(np.delete(r2, missing_anchors))
     w.resize(edm.shape[0]-len(indices)-len(missing_anchors), 1)
     r2.resize(edm.shape[0]-len(indices)-len(missing_anchors), 1)
-    assert w.shape == r2.shape
     anchors = np.delete(anchors, missing_anchors, axis=0)
     assert w.shape[0] == anchors.shape[0]
+    assert np.isnan(w).any() == False
+    assert np.isnan(r2).any() == False
     return anchors, w, r2
 
 

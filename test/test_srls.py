@@ -41,11 +41,11 @@ class TestSRLS(BaseCommon.TestAlgorithms):
         print('TestSRLS:test_multiple')
         for i in range(100):
             self.create_points()
-            self.zero_weights(0.0, val=0.0)
-            self.zero_weights(0.1, val=0.0)
-            self.zero_weights(1.0, val=0.0)
+            #  self.zero_weights(0.0, val=0.0)
+            #  self.zero_weights(0.1, val=0.0)
+            #  self.zero_weights(1.0, val=0.0)
 
-            #self.zero_weights(0.0, val=np.nan)
+            self.zero_weights(0.0, val=np.nan)
             #self.zero_weights(0.1, val=np.nan)
             #self.zero_weights(1.0, val=np.nan)
 
