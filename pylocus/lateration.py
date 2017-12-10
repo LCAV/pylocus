@@ -18,6 +18,9 @@ def get_lateration_parameters(real_points, indices, index, edm, W=None):
         W = np.ones(edm.shape)
     w = np.delete(W[index, :], indices)
 
+    # set w to zero where measurements are invalid
+    no_measurements = np.where(r2 == 0.0)[0]
+
     # delete anchors where weight is zero to avoid ill-conditioning
     missing_anchors = np.where(w == 0.0)[0]
     w = np.asarray(np.delete(w, missing_anchors))
@@ -106,9 +109,9 @@ def SRLS(anchors, W, r2, print_out=False):
             lambda_opt = 0
 
     if (print_out):
-        print('phi I_orig', phi(I_orig))
-        print('phi inf', phi(inf))
-        print('phi opt', phi(lambda_opt))
+        print('phi(I_orig)', phi(I_orig))
+        print('phi(inf)', phi(inf))
+        print('phi(opt)', phi(lambda_opt))
 
     # Compute best estimate
     yhat = y_hat(lambda_opt)
