@@ -11,7 +11,6 @@ from pylocus.algorithms import reconstruct_srls
 
 
 class TestSRLS(BaseCommon.TestAlgorithms):
-    #class TestSRLS(unittest.TestCase):
     def setUp(self):
         BaseCommon.TestAlgorithms.setUp(self)
         self.n_it = 10

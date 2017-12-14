@@ -7,7 +7,6 @@ from .basics import assert_print, assert_all_print
 from cvxpy import *
 
 
-
 def get_lateration_parameters(real_points, indices, index, edm, W=None):
     """ Get parameters relevant for lateration from full real_points, edm and W.
     """
@@ -33,8 +32,8 @@ def get_lateration_parameters(real_points, indices, index, edm, W=None):
     missing_anchors = np.where(w == 0.0)[0]
     w = np.asarray(np.delete(w, missing_anchors))
     r2 = np.asarray(np.delete(r2, missing_anchors))
-    w.resize(edm.shape[0]-len(indices)-len(missing_anchors), 1)
-    r2.resize(edm.shape[0]-len(indices)-len(missing_anchors), 1)
+    w.resize(edm.shape[0] - len(indices) - len(missing_anchors), 1)
+    r2.resize(edm.shape[0] - len(indices) - len(missing_anchors), 1)
     anchors = np.delete(anchors, missing_anchors, axis=0)
     assert w.shape[0] == anchors.shape[0]
     assert np.isnan(w).any() == False
@@ -57,7 +56,8 @@ def SRLS(anchors, W, r2, print_out=False):
         assert A.shape[0] == b.shape[0]
         assert A.shape[1] == f.shape[0], 'A {}, f {}'.format(A.shape, f.shape)
         rhs = (np.dot(A.T, b) - _lambda * f).reshape((-1,))
-        assert lhs.shape[0] == rhs.shape[0], 'lhs {}, rhs {}'.format(lhs.shape, rhs.shape)
+        assert lhs.shape[0] == rhs.shape[0], 'lhs {}, rhs {}'.format(
+            lhs.shape, rhs.shape)
         try:
             return np.linalg.solve(lhs, rhs)
         except:
@@ -70,10 +70,10 @@ def SRLS(anchors, W, r2, print_out=False):
     def phi_prime(_lambda):
         # TODO: test this.
         B = np.linalg.inv(ATA + _lambda * D)
-        C = A.T.dot(b) - _lambda*f
+        C = A.T.dot(b) - _lambda * f
         y_prime = -B.dot(D.dot(B.dot(C)) - f)
         y = y_hat(_lambda)
-        return 2*y.T.dot(D).dot(y_prime) + 2*f.T.dot(y_prime)
+        return 2 * y.T.dot(D).dot(y_prime) + 2 * f.T.dot(y_prime)
 
     from scipy import optimize
     from scipy.linalg import sqrtm
@@ -95,14 +95,14 @@ def SRLS(anchors, W, r2, print_out=False):
         print('rank:', np.linalg.matrix_rank(A))
         print('eigvals:', eigvals(ATA))
         print('condition number:', np.linalg.cond(ATA))
-        print('generalized eigenvalues:',eig)
+        print('generalized eigenvalues:', eig)
     eps = 0.01
     if eig[-1] > 1e-10:
         I_orig = -1.0 / eig[-1] + eps
     else:
         print('Warning: biggest eigenvalue is zero!')
         I_orig = -1e-5
-    #assert phi(I_orig) < 0 and phi(inf) > 0 
+    #assert phi(I_orig) < 0 and phi(inf) > 0
     inf = 1e5
     xtol = 1e-12
     try:
@@ -111,8 +111,10 @@ def SRLS(anchors, W, r2, print_out=False):
         print('Bisect failed. Trying Newton...')
         lambda_opt = I_orig
         try:
-            lambda_opt = optimize.newton(phi, I_orig, fprime=phi_prime, maxiter=1000, tol=xtol)
-            assert phi(lambda_opt) < xtol, 'did not find solution of phi(lambda)=0:={}'.format(phi(lambda_opt))
+            lambda_opt = optimize.newton(
+                phi, I_orig, fprime=phi_prime, maxiter=1000, tol=xtol)
+            assert phi(lambda_opt) < xtol, 'did not find solution of phi(lambda)=0:={}'.format(
+                phi(lambda_opt))
         except:
             print('SRLS ERROR: Did not converge. Setting lambda to 0.')
             lambda_opt = 0
@@ -126,12 +128,12 @@ def SRLS(anchors, W, r2, print_out=False):
     yhat = y_hat(lambda_opt)
 
     # By definition, y = [x^T, alpha] and by constraints, alpha=norm(x)^2
-    # TODO: move this to test! 
+    # TODO: move this to test!
     # assert_print(np.linalg.norm(yhat[:-1])**2 - yhat[-1], 1e-6)
 
     lhs = np.dot(A.T, A) + lambda_opt * D
     rhs = (np.dot(A.T, b).reshape((-1, 1)) - lambda_opt * f).reshape((-1,))
-    # TODO: move to test! 
+    # TODO: move to test!
     # assert_all_print(np.dot(lhs, yhat) - rhs, 1e-6)
     return yhat[:d]
 
@@ -173,7 +175,7 @@ def RLS(anchors, W, r, print_out=False, grid=None, num_points=10):
         mse = np.linalg.norm(r_measured - r)**2
         return mse
 
-    if grid is None: 
+    if grid is None:
         grid = [np.min(anchors, axis=0), np.max(anchors, axis=0)]
 
     d = anchors.shape[1]
@@ -181,25 +183,26 @@ def RLS(anchors, W, r, print_out=False, grid=None, num_points=10):
     y = np.linspace(grid[0][1], grid[1][1], num_points)
     if d == 2:
         errors_test = np.zeros((num_points, num_points))
-        for i,xs in enumerate(x):
-            for j,ys in enumerate(y):
-                errors_test[i,j] = cost_function((xs, ys))
+        for i, xs in enumerate(x):
+            for j, ys in enumerate(y):
+                errors_test[i, j] = cost_function((xs, ys))
         min_idx = errors_test.argmin()
         min_idx_multi = np.unravel_index(min_idx, errors_test.shape)
-        xhat = np.c_[x[min_idx_multi[0]],y[min_idx_multi[1]]]
+        xhat = np.c_[x[min_idx_multi[0]], y[min_idx_multi[1]]]
     elif d == 3:
         z = np.linspace(grid[0][2], grid[1][2], num_points)
         errors_test = np.zeros((num_points, num_points, num_points))
 
         # TODO: make this more efficient.
         #xx, yy, zz= np.meshgrid(x, y, z)
-        for i,xs in enumerate(x):
-            for j,ys in enumerate(y):
-                for k,zs in enumerate(z):
-                    errors_test[i,j,k] = cost_function((xs, ys, zs))
+        for i, xs in enumerate(x):
+            for j, ys in enumerate(y):
+                for k, zs in enumerate(z):
+                    errors_test[i, j, k] = cost_function((xs, ys, zs))
         min_idx = errors_test.argmin()
         min_idx_multi = np.unravel_index(min_idx, errors_test.shape)
-        xhat = np.c_[x[min_idx_multi[0]],y[min_idx_multi[1]],z[min_idx_multi[2]]]
+        xhat = np.c_[x[min_idx_multi[0]],
+                     y[min_idx_multi[1]], z[min_idx_multi[2]]]
     else:
         raise ValueError('Non-supported number of dimensions.')
     return xhat[0]
@@ -221,20 +224,20 @@ def RLS_SDR(anchors, W, r, print_out=False):
     m = anchors.shape[0]
     d = anchors.shape[1]
 
-    G = Variable(m+1, m+1)
-    X = Variable(d+1, d+1)
-    constraints = [G[m,m] == 1.0,
-                   X[d,d] == 1.0,
+    G = Variable(m + 1, m + 1)
+    X = Variable(d + 1, d + 1)
+    constraints = [G[m, m] == 1.0,
+                   X[d, d] == 1.0,
                    G >> 0, X >> 0,
                    G == G.T, X == X.T]
     for i in range(m):
-        Ci = np.eye(d+1)
-        Ci[:-1,-1] = -anchors[i]
-        Ci[-1,:-1] = -anchors[i].T
-        Ci[-1,-1] = np.linalg.norm(anchors[i])**2
-        constraints.append(G[i,i] == trace(Ci*X))
+        Ci = np.eye(d + 1)
+        Ci[:-1, -1] = -anchors[i]
+        Ci[-1, :-1] = -anchors[i].T
+        Ci[-1, -1] = np.linalg.norm(anchors[i])**2
+        constraints.append(G[i, i] == trace(Ci * X))
 
-    obj = Minimize(trace(G) - 2*sum_entries(mul_elemwise(r, G[m,:-1].T)))
+    obj = Minimize(trace(G) - 2 * sum_entries(mul_elemwise(r, G[m, :-1].T)))
     prob = Problem(obj, constraints)
 
     ## Solution
