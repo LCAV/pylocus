@@ -60,4 +60,4 @@ class BaseCommon:
                             success +=1
                         total +=1
             rate = success/total*100
-            self.assertTrue(rate > self.success_rate, 'noiseless success rate below {}: {}'.format(self.success_rate, rate))
+            self.assertTrue(rate >= self.success_rate, 'noiseless success rate below {}: {}'.format(self.success_rate, rate))
