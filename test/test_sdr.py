@@ -38,9 +38,7 @@ class TestSDP(BaseCommon.TestAlgorithms):
                         {'solver': 'CVXOPT',
                          'abstol': 1e-5,
                          'reltol': 1e-6,
-                         'feastol': 1e-7},
-                        {'solver': 'SCS',
-                         'eps': 1e-10}]
+                         'feastol': 1e-7}]
         for options, eps in zip(options_list, epsilons):
             print('testing options', options, eps)
             self.eps = eps
