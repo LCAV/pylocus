@@ -30,13 +30,16 @@ def get_lateration_parameters(real_points, indices, index, edm, W=None):
     return anchors, w, r2
 
 
-def SRLS(anchors, W, r2, print_out=False):
+def SRLS(anchors, W, r2, rescale=False, print_out=False):
     '''Squared range least squares (SRLS)
 
     Algorithm written by A.Beck, P.Stoica in "Approximate and Exact solutions of Source Localization Problems".
 
     :param anchors: anchor points
+    :param W: weights for the measurements
     :param r2: squared distances from anchors to point x.
+    :param rescale: Optional paramters. This deals with squared range measurements whose global scale has been lost.
+    :param print_out: Optional parameter, prints extra information.
 
     :return: estimated position of point x.
     '''
@@ -44,7 +47,7 @@ def SRLS(anchors, W, r2, print_out=False):
         lhs = ATA + _lambda * D
         assert A.shape[0] == b.shape[0]
         assert A.shape[1] == f.shape[0], 'A {}, f {}'.format(A.shape, f.shape)
-        rhs = (np.dot(A.T, b) - _lambda * f).reshape((-1,))
+        rhs = (np.dot(A.T, b) - _lambda * f.flatten()).reshape((-1,))
         assert lhs.shape[0] == rhs.shape[0], 'lhs {}, rhs {}'.format(lhs.shape, rhs.shape)
         try:
             return np.linalg.solve(lhs, rhs)
@@ -68,15 +71,40 @@ def SRLS(anchors, W, r2, print_out=False):
     # Set up optimization problem
     n = anchors.shape[0]
     d = anchors.shape[1]
-    A = np.c_[-2 * anchors, np.ones((n, 1))]
+
+    if rescale and n < d + 2:
+        raise ValueError('A minimum of d + 2 ranges are necessary for rescaled ranging.')
+    elif n < d + 1:
+        raise ValueError('A minimum of d + 1 ranges are necessary for ranging.')
+
+    if rescale:
+        A = np.c_[-2 * anchors, np.ones((n, 1)), -r2]
+    else:
+        A = np.c_[-2 * anchors, np.ones((n, 1))]
+
     Sigma = np.diagflat(np.power(W, 0.5))
     A = Sigma.dot(A)
     ATA = np.dot(A.T, A)
-    b = r2 - np.power(np.linalg.norm(anchors, axis=1), 2).reshape(r2.shape)
+
+    if rescale:
+        b = - np.power(np.linalg.norm(anchors, axis=1), 2).reshape(r2.shape)
+    else:
+        b = r2 - np.power(np.linalg.norm(anchors, axis=1), 2).reshape(r2.shape)
+
     b = Sigma.dot(b)
-    D = np.zeros((d + 1, d + 1))
+
+    if rescale:
+        D = np.zeros((d + 2, d + 2))
+    else:
+        D = np.zeros((d + 1, d + 1))
+
     D[:d, :d] = np.eye(d)
-    f = np.c_[np.zeros((1, d)), -0.5].T
+
+    if rescale:
+        f = np.c_[np.zeros((1, d)), -0.5, 0.].T
+    else:
+        f = np.c_[np.zeros((1, d)), -0.5].T
+
     eig = np.sort(np.real(eigvals(a=D, b=ATA)))
     if (print_out):
         print('ATA:', ATA)
@@ -113,14 +141,9 @@ def SRLS(anchors, W, r2, print_out=False):
     # Compute best estimate
     yhat = y_hat(lambda_opt)
 
-    # By definition, y = [x^T, alpha] and by constraints, alpha=norm(x)^2
-    # TODO: move this to test! 
-    # assert_print(np.linalg.norm(yhat[:-1])**2 - yhat[-1], 1e-6)
+    if print_out and rescale:
+        print('Scaling factor :', yhat[-1])
 
-    lhs = np.dot(A.T, A) + lambda_opt * D
-    rhs = (np.dot(A.T, b).reshape((-1, 1)) - lambda_opt * f).reshape((-1,))
-    # TODO: move to test! 
-    # assert_all_print(np.dot(lhs, yhat) - rhs, 1e-6)
     return yhat[:d]
 
 

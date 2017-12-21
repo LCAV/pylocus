@@ -8,7 +8,7 @@ from test_common import BaseCommon
 from pylocus.point_set import PointSet, create_from_points
 from pylocus.simulation import create_noisy_edm
 from pylocus.algorithms import reconstruct_srls
-
+from pylocus.lateration import SRLS
 
 class TestSRLS(BaseCommon.TestAlgorithms):
     #class TestSRLS(unittest.TestCase):
@@ -41,6 +41,31 @@ class TestSRLS(BaseCommon.TestAlgorithms):
             self.zero_weights(0.0)
             self.zero_weights(0.1)
             self.zero_weights(1.0)
+
+    def test_srls_rescale():
+
+        anchors = np.array([[ 0.        ,  8.44226166,  0.29734295],
+                            [ 1.        ,  7.47840264,  1.41311759],
+                            [ 2.        ,  8.08093318,  2.21959719],
+                            [ 3.        ,  4.55126532,  0.0456345 ],
+                            [ 4.        ,  5.10971446, -0.01223217],
+                            [ 5.        ,  2.95745961, -0.77572604],
+                            [ 6.        ,  3.12145804,  0.80297295],
+                            [ 7.        ,  2.29152331, -0.48021431],
+                            [ 8.        ,  1.53137609, -0.03621697],
+                            [ 9.        ,  0.762208  ,  0.70329037]])
+        W = np.ones(anchors.shape[0])
+        x = np.ones(anchors.shape[1]) * 4.
+        r2 = np.linalg.norm(anchors - x[None,:], axis=1)**2
+        sigma = 3.
+
+        # Normal ranging
+        x_srls = SRLS(anchors, W, r2)
+        assert np.allclose(x, x_srls)
+
+        # Rescaled ranging
+        x_srls_resc = SRLS(anchors, W, sigma * r2, rescale=True)
+        assert np.allclose(x, x_srls_resc)
 
     def zero_weights(self, noise=0.1):
         print('TestSRLS:test_zero_weights({})'.format(noise))
