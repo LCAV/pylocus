@@ -12,7 +12,7 @@ setup(
 
     name='pylocus',
 
-    version='1.0.0.dev4',
+    version='1.0.1',
 
     description='Localization Package',
 
