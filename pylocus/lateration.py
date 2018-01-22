@@ -2,7 +2,7 @@
 # module LATERATION
 
 import numpy as np
-from scipy.linalg import eigvals
+from scipy.linalg import eigvals, eigvalsh
 from .basics import assert_print, assert_all_print
 from cvxpy import *
 
@@ -38,7 +38,11 @@ def SRLS(anchors, W, r2, rescale=False, print_out=False):
     :param anchors: anchor points
     :param W: weights for the measurements
     :param r2: squared distances from anchors to point x.
-    :param rescale: Optional paramters. This deals with squared range measurements whose global scale has been lost.
+    :param rescale: Optional paramters. When set to True, the algorithm will
+        also identify if there is a global scaling of the measurements.  Such a
+        situation arise for example when the measurement units of the distance is
+        unknown and different from that of the anchors locations (e.g. anchors are
+        in meters, distance in centimeters).
     :param print_out: Optional parameter, prints extra information.
 
     :return: estimated position of point x.
@@ -47,8 +51,10 @@ def SRLS(anchors, W, r2, rescale=False, print_out=False):
         lhs = ATA + _lambda * D
         assert A.shape[0] == b.shape[0]
         assert A.shape[1] == f.shape[0], 'A {}, f {}'.format(A.shape, f.shape)
-        rhs = (np.dot(A.T, b) - _lambda * f.flatten()).reshape((-1,))
+        rhs = (np.dot(A.T, b) - _lambda * f).reshape((-1,))
         assert lhs.shape[0] == rhs.shape[0], 'lhs {}, rhs {}'.format(lhs.shape, rhs.shape)
+        #import pdb
+        #pdb.set_trace()
         try:
             return np.linalg.solve(lhs, rhs)
         except:
@@ -83,7 +89,7 @@ def SRLS(anchors, W, r2, rescale=False, print_out=False):
         A = np.c_[-2 * anchors, np.ones((n, 1))]
 
     Sigma = np.diagflat(np.power(W, 0.5))
-    A = Sigma.dot(A)
+    #A = Sigma.dot(A)
     ATA = np.dot(A.T, A)
 
     if rescale:
@@ -91,7 +97,7 @@ def SRLS(anchors, W, r2, rescale=False, print_out=False):
     else:
         b = r2 - np.power(np.linalg.norm(anchors, axis=1), 2).reshape(r2.shape)
 
-    b = Sigma.dot(b)
+    #b = Sigma.dot(b)
 
     if rescale:
         D = np.zeros((d + 2, d + 2))
@@ -105,7 +111,9 @@ def SRLS(anchors, W, r2, rescale=False, print_out=False):
     else:
         f = np.c_[np.zeros((1, d)), -0.5].T
 
-    eig = np.sort(np.real(eigvals(a=D, b=ATA)))
+    eig = np.sort(np.real(eigvalsh(a=D, b=ATA)))
+    eig = np.sort(eigvalsh(a=D, b=ATA))
+    print(eig)
     if (print_out):
         print('ATA:', ATA)
         print('rank:', np.linalg.matrix_rank(A))
@@ -140,11 +148,15 @@ def SRLS(anchors, W, r2, rescale=False, print_out=False):
 
     # Compute best estimate
     yhat = y_hat(lambda_opt)
+    print(yhat[:d])
 
     if print_out and rescale:
         print('Scaling factor :', yhat[-1])
 
-    return yhat[:d]
+    if rescale:
+        return yhat[:d], yhat[-1]
+    else:
+        return yhat[:d]
 
 
 def PozyxLS(anchors, W, r2, print_out=False):
