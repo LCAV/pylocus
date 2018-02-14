@@ -30,8 +30,9 @@ def execute_method(method, noisy_edm=None, real_points=None, W=None, **kwargs):
         xhat, costs = reconstruct_dwmds(noisy_edm, W=W, X0=X0, **kwargs)
     if method == 'SRLS':
         n = kwargs.get('n', None)
+        rescale = kwargs.get('rescale', False)
         xhat = reconstruct_srls(noisy_edm, real_points,
-                                n=n, W=W)
+                                n=n, W=W, rescale=rescale)
     return xhat
 
 
@@ -187,7 +188,7 @@ def reconstruct_sdp(edm, real_points, W=None, print_out=False, lamda=1000, **kwa
     return Xhat, edm_complete
 
 
-def reconstruct_srls(edm, real_points, W=None, print_out=False, n=1):
+def reconstruct_srls(edm, real_points, W=None, print_out=False, n=1, rescale=False):
     """ Reconstruct point set using S(quared)R(ange)L(east)S(quares) method.
     """
     from .lateration import SRLS, get_lateration_parameters
@@ -198,7 +199,9 @@ def reconstruct_srls(edm, real_points, W=None, print_out=False, n=1):
                                                    edm, W)
         if print_out:
             print('SRLS parameters:', anchors, w, r2)
-        srls = SRLS(anchors, w, r2, print_out)
+        srls = SRLS(anchors, w, r2, rescale, print_out)
+        if rescale:
+            srls = srls[0] # second element of output is the scale
         Y[index, :] = srls
     return Y
 

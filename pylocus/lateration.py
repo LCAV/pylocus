@@ -41,14 +41,14 @@ def get_lateration_parameters(real_points, indices, index, edm, W=None):
     return anchors, w, r2
 
 
-def SRLS(anchors, W, r2, rescale=False, print_out=False):
+def SRLS(anchors, w, r2, rescale=False, print_out=False):
     '''Squared range least squares (SRLS)
 
     Algorithm written by A.Beck, P.Stoica in "Approximate and Exact solutions of Source Localization Problems".
 
-    :param anchors: anchor points
-    :param W: weights for the measurements
-    :param r2: squared distances from anchors to point x.
+    :param anchors: anchor points (Nxd)
+    :param w: weights for the measurements (Nx1)
+    :param r2: squared distances from anchors to point x. (Nx1)
     :param rescale: Optional paramters. When set to True, the algorithm will
         also identify if there is a global scaling of the measurements.  Such a
         situation arise for example when the measurement units of the distance is
@@ -84,32 +84,31 @@ def SRLS(anchors, W, r2, rescale=False, print_out=False):
 
     from scipy import optimize
     from scipy.linalg import sqrtm
-    # Set up optimization problem
-    n = anchors.shape[0]
-    d = anchors.shape[1]
+
+    n, d = anchors.shape
+    assert r2.shape[1] == 1 and r2.shape[0]==n, 'r2 has to be of shape Nx1'
+    assert w.shape[1] == 1 and w.shape[0]==n, 'w has to be of shape Nx1'
 
     if rescale and n < d + 2:
         raise ValueError('A minimum of d + 2 ranges are necessary for rescaled ranging.')
     elif n < d + 1:
         raise ValueError('A minimum of d + 1 ranges are necessary for ranging.')
+    
+    Sigma = np.diagflat(np.power(w, 0.5))
 
     if rescale:
         A = np.c_[-2 * anchors, np.ones((n, 1)), -r2]
     else:
         A = np.c_[-2 * anchors, np.ones((n, 1))]
-
-    Sigma = np.diagflat(np.power(W, 0.5))
-    # TODO: do we need this? 
-    A = Sigma.dot(A)
-    ATA = np.dot(A.T, A)
+        A = Sigma.dot(A)
 
     if rescale:
         b = - np.power(np.linalg.norm(anchors, axis=1), 2).reshape(r2.shape)
     else:
         b = r2 - np.power(np.linalg.norm(anchors, axis=1), 2).reshape(r2.shape)
+        b = Sigma.dot(b)
 
-    # TODO: do we need this? 
-    b = Sigma.dot(b)
+    ATA = np.dot(A.T, A)
 
     if rescale:
         D = np.zeros((d + 2, d + 2))
@@ -124,8 +123,6 @@ def SRLS(anchors, W, r2, rescale=False, print_out=False):
         f = np.c_[np.zeros((1, d)), -0.5].T
 
     eig = np.sort(np.real(eigvalsh(a=D, b=ATA)))
-    eig = np.sort(eigvalsh(a=D, b=ATA))
-    print(eig)
     if (print_out):
         print('ATA:', ATA)
         print('rank:', np.linalg.matrix_rank(A))
