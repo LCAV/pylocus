@@ -11,8 +11,8 @@ from pylocus.algorithms import reconstruct_srls
 
 
 class TestSRLS(BaseCommon.TestAlgorithms):
-    #class TestSRLS(unittest.TestCase):
     def setUp(self):
+        BaseCommon.TestAlgorithms.setUp(self)
         self.create_points()
 
     def create_points(self, N=10, d=2):
@@ -27,11 +27,11 @@ class TestSRLS(BaseCommon.TestAlgorithms):
         #  [0.43, 0.44],
         #  [0.58, 0.59]])
         self.pts.init()
-        self.index = 0
+        self.n = 1
 
-    def call_method(self):
+    def call_method(self, method=''):
         print('TestSRLS:call_method')
-        return reconstruct_srls(self.pts.edm, self.pts.points, indices=[self.index],
+        return reconstruct_srls(self.pts.edm, self.pts.points, n=self.n,
                                 W=np.ones(self.pts.edm.shape))
 
     def test_multiple_weights(self):
@@ -44,7 +44,8 @@ class TestSRLS(BaseCommon.TestAlgorithms):
 
     def zero_weights(self, noise=0.1):
         print('TestSRLS:test_zero_weights({})'.format(noise))
-        other = np.delete(range(self.pts.N), self.index)
+        index = np.arange(self.n)
+        other = np.delete(range(self.pts.N), index)
         edm_noisy = create_noisy_edm(self.pts.edm, noise)
 
         # missing anchors
@@ -55,22 +56,22 @@ class TestSRLS(BaseCommon.TestAlgorithms):
         edm_anchors = np.delete(edm_noisy, indices, axis=0)
         edm_anchors = np.delete(edm_anchors, indices, axis=1)
         missing_anchors = reconstruct_srls(
-            edm_anchors, points_missing.points, indices=[self.index], W=None,
+            edm_anchors, points_missing.points, n=self.n, W=None,
             print_out=False)
 
         # missing distances
         weights = np.ones(edm_noisy.shape)
-        weights[indices, self.index] = 0.0
-        weights[self.index, indices] = 0.0
+        weights[indices, index] = 0.0
+        weights[index, indices] = 0.0
 
         missing_distances = reconstruct_srls(
-            edm_noisy, self.pts.points, indices=[self.index], W=weights)
+            edm_noisy, self.pts.points, n=self.n, W=weights)
         left_distances = np.delete(range(self.pts.N), indices)
 
         self.assertTrue(np.linalg.norm(
             missing_distances[left_distances, :] - missing_anchors) < 1e-10, 'anchors moved.')
         self.assertTrue(np.linalg.norm(
-            missing_distances[self.index, :] - missing_anchors[self.index, :]) < 1e-10, 'point moved.')
+            missing_distances[index, :] - missing_anchors[index, :]) < 1e-10, 'point moved.')
         if noise == 0.0:
             error = np.linalg.norm(missing_anchors - points_missing.points)
             u, s, v = np.linalg.svd(self.pts.points[other, :])
