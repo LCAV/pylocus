@@ -10,7 +10,6 @@ from pylocus.simulation import create_noisy_edm
 from pylocus.algorithms import reconstruct_srls
 from pylocus.lateration import SRLS, get_lateration_parameters
 
-
 class TestSRLS(BaseCommon.TestAlgorithms):
     def setUp(self):
         BaseCommon.TestAlgorithms.setUp(self)
@@ -35,6 +34,7 @@ class TestSRLS(BaseCommon.TestAlgorithms):
         self.n = 1
 
     def call_method(self, method=''):
+        print('TestSRLS:call_method')
         if method == '' or method == 'normal':
             return reconstruct_srls(self.pts.edm, self.pts.points, n=self.n,
                                     W=np.ones(self.pts.edm.shape))

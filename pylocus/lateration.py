@@ -158,6 +158,7 @@ def SRLS(anchors, w, r2, rescale=False, print_out=False):
 
     # Compute best estimate
     yhat = y_hat(lambda_opt)
+    print(yhat[:d])
 
     if print_out and rescale:
         print('Scaling factor :', yhat[-1])

@@ -3,7 +3,7 @@
 
 import unittest
 import numpy as np
-from abc import *
+from abc import ABC, abstractmethod
 
 
 class BaseCommon:
