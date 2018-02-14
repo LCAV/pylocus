@@ -11,7 +11,9 @@ from pylocus.simulation import create_noisy_edm
 
 class TestACD(BaseCommon.TestAlgorithms):
     def setUp(self):
+        BaseCommon.TestAlgorithms.setUp(self)
         self.create_points()
+        self.n_it = 10
 
     def create_points(self, N=5, d=2):
         print('TestACD:create_points')
@@ -20,13 +22,12 @@ class TestACD(BaseCommon.TestAlgorithms):
         self.pts.init()
         self.index = 0
 
-    def call_method(self):
+    def call_method(self, method=''):
         print('TestACD:call_method')
-        Xhat, res = reconstruct_acd(self.pts.edm,
-                                    real_points=self.pts.points,
+        Xhat, costs = reconstruct_acd(self.pts.edm,
                                     W=np.ones(self.pts.edm.shape),
                                     X0=self.pts.points,
-                                    print_out=False, n_it=3)
+                                    print_out=False, sweeps=3)
         return Xhat
 
     def add_noise(self, noise=1e-6):
