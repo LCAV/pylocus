@@ -2,7 +2,7 @@
 # module LATERATION
 
 import numpy as np
-from scipy.linalg import eigvals
+from scipy.linalg import eigvals, eigvalsh
 from .basics import assert_print, assert_all_print
 from cvxpy import *
 
@@ -30,13 +30,20 @@ def get_lateration_parameters(real_points, indices, index, edm, W=None):
     return anchors, w, r2
 
 
-def SRLS(anchors, W, r2, print_out=False):
+def SRLS(anchors, W, r2, rescale=False, print_out=False):
     '''Squared range least squares (SRLS)
 
     Algorithm written by A.Beck, P.Stoica in "Approximate and Exact solutions of Source Localization Problems".
 
     :param anchors: anchor points
+    :param W: weights for the measurements
     :param r2: squared distances from anchors to point x.
+    :param rescale: Optional paramters. When set to True, the algorithm will
+        also identify if there is a global scaling of the measurements.  Such a
+        situation arise for example when the measurement units of the distance is
+        unknown and different from that of the anchors locations (e.g. anchors are
+        in meters, distance in centimeters).
+    :param print_out: Optional parameter, prints extra information.
 
     :return: estimated position of point x.
     '''
@@ -46,6 +53,8 @@ def SRLS(anchors, W, r2, print_out=False):
         assert A.shape[1] == f.shape[0], 'A {}, f {}'.format(A.shape, f.shape)
         rhs = (np.dot(A.T, b) - _lambda * f).reshape((-1,))
         assert lhs.shape[0] == rhs.shape[0], 'lhs {}, rhs {}'.format(lhs.shape, rhs.shape)
+        #import pdb
+        #pdb.set_trace()
         try:
             return np.linalg.solve(lhs, rhs)
         except:
@@ -68,16 +77,43 @@ def SRLS(anchors, W, r2, print_out=False):
     # Set up optimization problem
     n = anchors.shape[0]
     d = anchors.shape[1]
-    A = np.c_[-2 * anchors, np.ones((n, 1))]
+
+    if rescale and n < d + 2:
+        raise ValueError('A minimum of d + 2 ranges are necessary for rescaled ranging.')
+    elif n < d + 1:
+        raise ValueError('A minimum of d + 1 ranges are necessary for ranging.')
+
+    if rescale:
+        A = np.c_[-2 * anchors, np.ones((n, 1)), -r2]
+    else:
+        A = np.c_[-2 * anchors, np.ones((n, 1))]
+
     Sigma = np.diagflat(np.power(W, 0.5))
-    A = Sigma.dot(A)
+    #A = Sigma.dot(A)
     ATA = np.dot(A.T, A)
-    b = r2 - np.power(np.linalg.norm(anchors, axis=1), 2).reshape(r2.shape)
-    b = Sigma.dot(b)
-    D = np.zeros((d + 1, d + 1))
+
+    if rescale:
+        b = - np.power(np.linalg.norm(anchors, axis=1), 2).reshape(r2.shape)
+    else:
+        b = r2 - np.power(np.linalg.norm(anchors, axis=1), 2).reshape(r2.shape)
+
+    #b = Sigma.dot(b)
+
+    if rescale:
+        D = np.zeros((d + 2, d + 2))
+    else:
+        D = np.zeros((d + 1, d + 1))
+
     D[:d, :d] = np.eye(d)
-    f = np.c_[np.zeros((1, d)), -0.5].T
-    eig = np.sort(np.real(eigvals(a=D, b=ATA)))
+
+    if rescale:
+        f = np.c_[np.zeros((1, d)), -0.5, 0.].T
+    else:
+        f = np.c_[np.zeros((1, d)), -0.5].T
+
+    eig = np.sort(np.real(eigvalsh(a=D, b=ATA)))
+    eig = np.sort(eigvalsh(a=D, b=ATA))
+    print(eig)
     if (print_out):
         print('ATA:', ATA)
         print('rank:', np.linalg.matrix_rank(A))
@@ -112,16 +148,15 @@ def SRLS(anchors, W, r2, print_out=False):
 
     # Compute best estimate
     yhat = y_hat(lambda_opt)
+    print(yhat[:d])
 
-    # By definition, y = [x^T, alpha] and by constraints, alpha=norm(x)^2
-    # TODO: move this to test! 
-    # assert_print(np.linalg.norm(yhat[:-1])**2 - yhat[-1], 1e-6)
+    if print_out and rescale:
+        print('Scaling factor :', yhat[-1])
 
-    lhs = np.dot(A.T, A) + lambda_opt * D
-    rhs = (np.dot(A.T, b).reshape((-1, 1)) - lambda_opt * f).reshape((-1,))
-    # TODO: move to test! 
-    # assert_all_print(np.dot(lhs, yhat) - rhs, 1e-6)
-    return yhat[:d]
+    if rescale:
+        return yhat[:d], yhat[-1]
+    else:
+        return yhat[:d]
 
 
 def PozyxLS(anchors, W, r2, print_out=False):
