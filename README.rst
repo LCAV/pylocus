@@ -33,6 +33,15 @@ To install from pip, simply run :
 
 PyPi link : https://pypi.python.org/pypi/pylocus
 
+Requirements
+************
+
+Depending on which parts of the project you are using, you might need to install more heavy requirements such as cvxpy and cxopt. These are not included in the default install and can be installed by running the following line.
+
+.. code-block:: bash
+
+  pip install -r requirements.txt
+
 Documentation
 *************
 
