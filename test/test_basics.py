@@ -33,7 +33,7 @@ class TestProjection(unittest.TestCase):
 
     def test_projection(self):
         xhat, cost, constraints = projection(self.x, self.A, self.b)
-        self.assertTrue(constraints <= 1e-20, 'Constraints not satisfied:{}'.format(constraints))
+        self.assertTrue(constraints <= 1e-15, 'Constraints not satisfied:{}'.format(constraints))
 
         xhat2, __, __ = projection(xhat, self.A, self.b)
         idempotent_error = mse(xhat, xhat2)
