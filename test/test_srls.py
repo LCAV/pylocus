@@ -8,12 +8,11 @@ from test_common import BaseCommon
 from pylocus.point_set import PointSet, create_from_points
 from pylocus.simulation import create_noisy_edm
 from pylocus.algorithms import reconstruct_srls
-
+from pylocus.lateration import SRLS
 
 class TestSRLS(BaseCommon.TestAlgorithms):
     def setUp(self):
         BaseCommon.TestAlgorithms.setUp(self)
-        self.n_it = 10
         self.create_points()
 
     def create_points(self, N=10, d=2):
@@ -29,7 +28,6 @@ class TestSRLS(BaseCommon.TestAlgorithms):
         #  [0.58, 0.59]])
         self.pts.init()
         self.n = 1
-        self.index = 0
 
     def call_method(self, method=''):
         print('TestSRLS:call_method')
@@ -40,17 +38,39 @@ class TestSRLS(BaseCommon.TestAlgorithms):
         print('TestSRLS:test_multiple')
         for i in range(100):
             self.create_points()
-            #  self.zero_weights(0.0, val=0.0)
-            #  self.zero_weights(0.1, val=0.0)
-            #  self.zero_weights(1.0, val=0.0)
+            self.zero_weights(0.0)
+            self.zero_weights(0.1)
+            self.zero_weights(1.0)
 
-            self.zero_weights(0.0, val=np.nan)
-            #self.zero_weights(0.1, val=np.nan)
-            #self.zero_weights(1.0, val=np.nan)
+    def test_srls_rescale():
 
-    def zero_weights(self, noise=0.1, val=0.0):
+        anchors = np.array([[ 0.        ,  8.44226166,  0.29734295],
+                            [ 1.        ,  7.47840264,  1.41311759],
+                            [ 2.        ,  8.08093318,  2.21959719],
+                            [ 3.        ,  4.55126532,  0.0456345 ],
+                            [ 4.        ,  5.10971446, -0.01223217],
+                            [ 5.        ,  2.95745961, -0.77572604],
+                            [ 6.        ,  3.12145804,  0.80297295],
+                            [ 7.        ,  2.29152331, -0.48021431],
+                            [ 8.        ,  1.53137609, -0.03621697],
+                            [ 9.        ,  0.762208  ,  0.70329037]])
+        W = np.ones(anchors.shape[0])
+        x = np.ones(anchors.shape[1]) * 4.
+        r2 = np.linalg.norm(anchors - x[None,:], axis=1)**2
+        sigma = 3.
+
+        # Normal ranging
+        x_srls = SRLS(anchors, W, r2)
+        assert np.allclose(x, x_srls)
+
+        # Rescaled ranging
+        x_srls_resc = SRLS(anchors, W, sigma * r2, rescale=True)
+        assert np.allclose(x, x_srls_resc)
+
+    def zero_weights(self, noise=0.1):
         print('TestSRLS:test_zero_weights({})'.format(noise))
-        other = np.delete(range(self.pts.N), self.index)
+        index = np.arange(self.n)
+        other = np.delete(range(self.pts.N), index)
         edm_noisy = create_noisy_edm(self.pts.edm, noise)
 
         # missing anchors
@@ -66,8 +86,8 @@ class TestSRLS(BaseCommon.TestAlgorithms):
 
         # missing distances
         weights = np.ones(edm_noisy.shape)
-        weights[indices, self.index] = val
-        weights[self.index, indices] = val
+        weights[indices, index] = 0.0
+        weights[index, indices] = 0.0
 
         missing_distances = reconstruct_srls(
             edm_noisy, self.pts.points, n=self.n, W=weights)
@@ -76,7 +96,7 @@ class TestSRLS(BaseCommon.TestAlgorithms):
         self.assertTrue(np.linalg.norm(
             missing_distances[left_distances, :] - missing_anchors) < 1e-10, 'anchors moved.')
         self.assertTrue(np.linalg.norm(
-            missing_distances[self.index, :] - missing_anchors[self.index, :]) < 1e-10, 'point moved.')
+            missing_distances[index, :] - missing_anchors[index, :]) < 1e-10, 'point moved.')
         if noise == 0.0:
             error = np.linalg.norm(missing_anchors - points_missing.points)
             u, s, v = np.linalg.svd(self.pts.points[other, :])
