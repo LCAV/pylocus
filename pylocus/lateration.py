@@ -7,37 +7,48 @@ from .basics import assert_print, assert_all_print
 from cvxpy import *
 
 
-
 def get_lateration_parameters(real_points, indices, index, edm, W=None):
     """ Get parameters relevant for lateration from full real_points, edm and W.
     """
+    if W is None:
+        W = np.ones(edm.shape)
+
     # delete points that are not considered anchors
     anchors = np.delete(real_points, indices, axis=0)
     r2 = np.delete(edm[index, :], indices)
-    if W is None:
-        W = np.ones(edm.shape)
     w = np.delete(W[index, :], indices)
+
+    # set w to zero where measurements are invalid
+    if np.isnan(r2).any():
+        nan_measurements = np.where(np.isnan(r2))[0]
+        r2[nan_measurements] = 0.0
+        w[nan_measurements] = 0.0
+    if np.isnan(w).any():
+        nan_measurements = np.where(np.isnan(w))[0]
+        r2[nan_measurements] = 0.0
+        w[nan_measurements] = 0.0
 
     # delete anchors where weight is zero to avoid ill-conditioning
     missing_anchors = np.where(w == 0.0)[0]
     w = np.asarray(np.delete(w, missing_anchors))
     r2 = np.asarray(np.delete(r2, missing_anchors))
-    w.resize(edm.shape[0]-len(indices)-len(missing_anchors), 1)
-    r2.resize(edm.shape[0]-len(indices)-len(missing_anchors), 1)
-    assert w.shape == r2.shape
+    w.resize(edm.shape[0] - len(indices) - len(missing_anchors), 1)
+    r2.resize(edm.shape[0] - len(indices) - len(missing_anchors), 1)
     anchors = np.delete(anchors, missing_anchors, axis=0)
     assert w.shape[0] == anchors.shape[0]
+    assert np.isnan(w).any() == False
+    assert np.isnan(r2).any() == False
     return anchors, w, r2
 
 
-def SRLS(anchors, W, r2, rescale=False, print_out=False):
+def SRLS(anchors, w, r2, rescale=False, print_out=False):
     '''Squared range least squares (SRLS)
 
     Algorithm written by A.Beck, P.Stoica in "Approximate and Exact solutions of Source Localization Problems".
 
-    :param anchors: anchor points
-    :param W: weights for the measurements
-    :param r2: squared distances from anchors to point x.
+    :param anchors: anchor points (Nxd)
+    :param w: weights for the measurements (Nx1)
+    :param r2: squared distances from anchors to point x. (Nx1)
     :param rescale: Optional paramters. When set to True, the algorithm will
         also identify if there is a global scaling of the measurements.  Such a
         situation arise for example when the measurement units of the distance is
@@ -52,9 +63,8 @@ def SRLS(anchors, W, r2, rescale=False, print_out=False):
         assert A.shape[0] == b.shape[0]
         assert A.shape[1] == f.shape[0], 'A {}, f {}'.format(A.shape, f.shape)
         rhs = (np.dot(A.T, b) - _lambda * f).reshape((-1,))
-        assert lhs.shape[0] == rhs.shape[0], 'lhs {}, rhs {}'.format(lhs.shape, rhs.shape)
-        #import pdb
-        #pdb.set_trace()
+        assert lhs.shape[0] == rhs.shape[0], 'lhs {}, rhs {}'.format(
+            lhs.shape, rhs.shape)
         try:
             return np.linalg.solve(lhs, rhs)
         except:
@@ -74,30 +84,31 @@ def SRLS(anchors, W, r2, rescale=False, print_out=False):
 
     from scipy import optimize
     from scipy.linalg import sqrtm
-    # Set up optimization problem
-    n = anchors.shape[0]
-    d = anchors.shape[1]
+
+    n, d = anchors.shape
+    assert r2.shape[1] == 1 and r2.shape[0]==n, 'r2 has to be of shape Nx1'
+    assert w.shape[1] == 1 and w.shape[0]==n, 'w has to be of shape Nx1'
 
     if rescale and n < d + 2:
         raise ValueError('A minimum of d + 2 ranges are necessary for rescaled ranging.')
     elif n < d + 1:
         raise ValueError('A minimum of d + 1 ranges are necessary for ranging.')
+    
+    Sigma = np.diagflat(np.power(w, 0.5))
 
     if rescale:
         A = np.c_[-2 * anchors, np.ones((n, 1)), -r2]
     else:
         A = np.c_[-2 * anchors, np.ones((n, 1))]
-
-    Sigma = np.diagflat(np.power(W, 0.5))
-    #A = Sigma.dot(A)
-    ATA = np.dot(A.T, A)
+        A = Sigma.dot(A)
 
     if rescale:
         b = - np.power(np.linalg.norm(anchors, axis=1), 2).reshape(r2.shape)
     else:
         b = r2 - np.power(np.linalg.norm(anchors, axis=1), 2).reshape(r2.shape)
+        b = Sigma.dot(b)
 
-    #b = Sigma.dot(b)
+    ATA = np.dot(A.T, A)
 
     if rescale:
         D = np.zeros((d + 2, d + 2))
@@ -112,21 +123,18 @@ def SRLS(anchors, W, r2, rescale=False, print_out=False):
         f = np.c_[np.zeros((1, d)), -0.5].T
 
     eig = np.sort(np.real(eigvalsh(a=D, b=ATA)))
-    eig = np.sort(eigvalsh(a=D, b=ATA))
-    print(eig)
     if (print_out):
         print('ATA:', ATA)
         print('rank:', np.linalg.matrix_rank(A))
         print('eigvals:', eigvals(ATA))
         print('condition number:', np.linalg.cond(ATA))
-        print('generalized eigenvalues:',eig)
+        print('generalized eigenvalues:', eig)
     eps = 0.01
     if eig[-1] > 1e-10:
         I_orig = -1.0 / eig[-1] + eps
     else:
         print('Warning: biggest eigenvalue is zero!')
         I_orig = -1e-5
-    #assert phi(I_orig) < 0 and phi(inf) > 0 
     inf = 1e5
     xtol = 1e-12
     try:
@@ -135,16 +143,18 @@ def SRLS(anchors, W, r2, rescale=False, print_out=False):
         print('Bisect failed. Trying Newton...')
         lambda_opt = I_orig
         try:
-            lambda_opt = optimize.newton(phi, I_orig, fprime=phi_prime, maxiter=1000, tol=xtol)
-            assert phi(lambda_opt) < xtol, 'did not find solution of phi(lambda)=0:={}'.format(phi(lambda_opt))
+            lambda_opt = optimize.newton(
+                phi, I_orig, fprime=phi_prime, maxiter=1000, tol=xtol)
+            assert phi(lambda_opt) < xtol, 'did not find solution of phi(lambda)=0:={}'.format(
+                phi(lambda_opt))
         except:
             print('SRLS ERROR: Did not converge. Setting lambda to 0.')
             lambda_opt = 0
 
     if (print_out):
-        print('phi I_orig', phi(I_orig))
-        print('phi inf', phi(inf))
-        print('phi opt', phi(lambda_opt))
+        print('phi(I_orig)', phi(I_orig))
+        print('phi(inf)', phi(inf))
+        print('phi(opt)', phi(lambda_opt))
 
     # Compute best estimate
     yhat = y_hat(lambda_opt)
@@ -196,7 +206,7 @@ def RLS(anchors, W, r, print_out=False, grid=None, num_points=10):
         mse = np.linalg.norm(r_measured - r)**2
         return mse
 
-    if grid is None: 
+    if grid is None:
         grid = [np.min(anchors, axis=0), np.max(anchors, axis=0)]
 
     d = anchors.shape[1]
@@ -204,25 +214,26 @@ def RLS(anchors, W, r, print_out=False, grid=None, num_points=10):
     y = np.linspace(grid[0][1], grid[1][1], num_points)
     if d == 2:
         errors_test = np.zeros((num_points, num_points))
-        for i,xs in enumerate(x):
-            for j,ys in enumerate(y):
-                errors_test[i,j] = cost_function((xs, ys))
+        for i, xs in enumerate(x):
+            for j, ys in enumerate(y):
+                errors_test[i, j] = cost_function((xs, ys))
         min_idx = errors_test.argmin()
         min_idx_multi = np.unravel_index(min_idx, errors_test.shape)
-        xhat = np.c_[x[min_idx_multi[0]],y[min_idx_multi[1]]]
+        xhat = np.c_[x[min_idx_multi[0]], y[min_idx_multi[1]]]
     elif d == 3:
         z = np.linspace(grid[0][2], grid[1][2], num_points)
         errors_test = np.zeros((num_points, num_points, num_points))
 
         # TODO: make this more efficient.
         #xx, yy, zz= np.meshgrid(x, y, z)
-        for i,xs in enumerate(x):
-            for j,ys in enumerate(y):
-                for k,zs in enumerate(z):
-                    errors_test[i,j,k] = cost_function((xs, ys, zs))
+        for i, xs in enumerate(x):
+            for j, ys in enumerate(y):
+                for k, zs in enumerate(z):
+                    errors_test[i, j, k] = cost_function((xs, ys, zs))
         min_idx = errors_test.argmin()
         min_idx_multi = np.unravel_index(min_idx, errors_test.shape)
-        xhat = np.c_[x[min_idx_multi[0]],y[min_idx_multi[1]],z[min_idx_multi[2]]]
+        xhat = np.c_[x[min_idx_multi[0]],
+                     y[min_idx_multi[1]], z[min_idx_multi[2]]]
     else:
         raise ValueError('Non-supported number of dimensions.')
     return xhat[0]
@@ -244,20 +255,20 @@ def RLS_SDR(anchors, W, r, print_out=False):
     m = anchors.shape[0]
     d = anchors.shape[1]
 
-    G = Variable(m+1, m+1)
-    X = Variable(d+1, d+1)
-    constraints = [G[m,m] == 1.0,
-                   X[d,d] == 1.0,
+    G = Variable(m + 1, m + 1)
+    X = Variable(d + 1, d + 1)
+    constraints = [G[m, m] == 1.0,
+                   X[d, d] == 1.0,
                    G >> 0, X >> 0,
                    G == G.T, X == X.T]
     for i in range(m):
-        Ci = np.eye(d+1)
-        Ci[:-1,-1] = -anchors[i]
-        Ci[-1,:-1] = -anchors[i].T
-        Ci[-1,-1] = np.linalg.norm(anchors[i])**2
-        constraints.append(G[i,i] == trace(Ci*X))
+        Ci = np.eye(d + 1)
+        Ci[:-1, -1] = -anchors[i]
+        Ci[-1, :-1] = -anchors[i].T
+        Ci[-1, -1] = np.linalg.norm(anchors[i])**2
+        constraints.append(G[i, i] == trace(Ci * X))
 
-    obj = Minimize(trace(G) - 2*sum_entries(mul_elemwise(r, G[m,:-1].T)))
+    obj = Minimize(trace(G) - 2 * sum_entries(mul_elemwise(r, G[m, :-1].T)))
     prob = Problem(obj, constraints)
 
     ## Solution
