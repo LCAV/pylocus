@@ -78,7 +78,7 @@ def semidefinite_relaxation(edm_missing, lamda, W=None, print_out=False, **kwarg
         return diag(gram) * e.T + e * diag(gram).T - 2 * gram
 
     method = kwargs.pop('method', 'maximize')
-    options = {'solver' : 'SCS'}
+    options = {'solver' : 'CVXOPT'}
     options.update(kwargs)
 
     if W is None:
