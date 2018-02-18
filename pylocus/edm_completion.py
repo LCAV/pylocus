@@ -3,6 +3,8 @@
 import numpy as np
 from cvxpy import *
 
+from .basics import get_edm
+
 
 def optspace(edm_missing, rank, niter=500, tol=1e-6, print_out=False):
     """Complete and denoise EDM using OptSpace algorithm.
@@ -68,6 +70,7 @@ def rank_alternation(edm_missing, rank, niter=50, print_out=False, edm_true=None
 
 def semidefinite_relaxation(edm_missing, lamda, W=None, print_out=False, **kwargs):
     from .algorithms import reconstruct_mds
+
     def kappa(gram):
         n = len(gram)
         e = np.ones(n)
@@ -78,7 +81,7 @@ def semidefinite_relaxation(edm_missing, lamda, W=None, print_out=False, **kwarg
         return diag(gram) * e.T + e * diag(gram).T - 2 * gram
 
     method = kwargs.pop('method', 'maximize')
-    options = {'solver' : 'CVXOPT'}
+    options = {'solver': 'CVXOPT'}
     options.update(kwargs)
 
     if W is None:
@@ -96,21 +99,23 @@ def semidefinite_relaxation(edm_missing, lamda, W=None, print_out=False, **kwarg
     edm_optimize = kappa_cvx(G, n)
 
     if method == 'maximize':
-        obj = Maximize(trace(H) - lamda * norm(mul_elemwise(W, (edm_optimize - edm_missing))))
+        obj = Maximize(trace(H) - lamda *
+                       norm(mul_elemwise(W, (edm_optimize - edm_missing))))
     elif method == 'minimize':
-        obj = Minimize(trace(H) + lamda * norm(mul_elemwise(W, (edm_optimize - edm_missing))))
+        obj = Minimize(trace(H) + lamda *
+                       norm(mul_elemwise(W, (edm_optimize - edm_missing))))
 
     prob = Problem(obj)
 
     total = prob.solve(**options)
     if print_out:
         print('total cost:', total)
-        print('SDP status:',prob.status)
+        print('SDP status:', prob.status)
 
     if H.value is not None:
         Gbest = V * H.value * V.T
         if print_out:
-            print('eigenvalues:',np.sum(np.linalg.eigvals(Gbest)[2:]))
+            print('eigenvalues:', np.sum(np.linalg.eigvals(Gbest)[2:]))
         edm_complete = kappa(Gbest)
     else:
         edm_complete = edm_missing
@@ -119,7 +124,8 @@ def semidefinite_relaxation(edm_missing, lamda, W=None, print_out=False, **kwarg
     if (print_out):
         if H.value is not None:
             print('trace of H:', np.trace(H.value))
-        print('other cost:', lamda * norm(mul_elemwise(W, (edm_complete - edm_missing))).value)
+        print('other cost:', lamda *
+              norm(mul_elemwise(W, (edm_complete - edm_missing))).value)
 
     return edm_complete
     # TODO: why does this not work?
@@ -127,6 +133,19 @@ def semidefinite_relaxation(edm_missing, lamda, W=None, print_out=False, **kwarg
     #from basics import eigendecomp
     #factor, u = eigendecomp(Gbest, d)
     #Xhat = np.diag(factor).dot(u.T)[:d]
+
+
+def completion_acd(edm, X0, W=None):
+    from .algorithms import reconstruct_acd
+    Xhat, costs = reconstruct_acd(edm, X0, W, tol=1e-6, sweeps=3)
+    return get_edm(Xhat)
+
+
+def completion_dwmds(edm, X0, W=None):
+    from .algorithms import reconstruct_dwmds
+    Xhat, costs = reconstruct_dwmds(edm, X0, W, n=1)
+    return get_edm(Xhat)
+
 
 if __name__ == "__main__":
     print('nothing happens when running this module. It is only a container of functions.')
