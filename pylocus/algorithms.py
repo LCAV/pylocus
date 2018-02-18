@@ -49,6 +49,7 @@ def procrustes(anchors, X, scale=True, print_out=False):
 
     :param anchors: Matrix of shape m x d, where m is number of anchors, d is dimension of setup.
     :param X: Matrix of shape N x d, where the last m points will be used to find fit with the anchors. 
+    :param scale: set to True if the point set should be scaled to match the anchors.
     
     :return: the transformed vector X, the rotation matrix, translation vector, and scaling factor.
     """
@@ -188,7 +189,8 @@ def reconstruct_sdp(edm, real_points, W=None, print_out=False, lamda=1000, **kwa
     return Xhat, edm_complete
 
 
-def reconstruct_srls(edm, real_points, W=None, print_out=False, n=1, rescale=False):
+def reconstruct_srls(edm, real_points, W=None, print_out=False, n=1, rescale=False,
+                     z=None):
     """ Reconstruct point set using S(quared)R(ange)L(east)S(quares) method.
     """
     from .lateration import SRLS, get_lateration_parameters
@@ -199,7 +201,7 @@ def reconstruct_srls(edm, real_points, W=None, print_out=False, n=1, rescale=Fal
                                                    edm, W)
         if print_out:
             print('SRLS parameters:', anchors, w, r2)
-        srls = SRLS(anchors, w, r2, rescale, print_out)
+        srls = SRLS(anchors, w, r2, rescale, z, print_out)
         if rescale:
             srls = srls[0] # second element of output is the scale
         Y[index, :] = srls

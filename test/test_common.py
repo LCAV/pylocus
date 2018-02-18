@@ -43,6 +43,8 @@ class BaseCommon:
                     self.create_points(N, d) 
                     for method in self.methods: 
                         points_estimate = self.call_method(method)
+                        if points_estimate is None:
+                            continue
                         error = np.linalg.norm(self.pts.points - points_estimate) 
                         self.assertTrue(error < self.eps, 'error: {} not smaller than {}'.format(error, self.eps))
 
@@ -55,6 +57,8 @@ class BaseCommon:
                     self.create_points(N, d)
                     for method in self.methods: 
                         points_estimate = self.call_method(method)
+                        if points_estimate is None:
+                            continue
                         error = np.linalg.norm(self.pts.points - points_estimate) 
                         if error < self.eps:
                             success +=1
