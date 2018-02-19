@@ -255,8 +255,6 @@ def reconstruct_acd(edm, X0, W=None, print_out=False, tol=1e-10, sweeps=10):
                 loop_coordinate(coord, i)
             if coord_counter > coord_n_it:
                 break
-
-    from .point_set import create_from_points, PointSet
     from .distributed_mds import get_step_size, f
 
     N, d = X0.shape
