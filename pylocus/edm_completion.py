@@ -127,7 +127,7 @@ def semidefinite_relaxation(edm_missing, lamda, W=None, print_out=False, **kwarg
         print('other cost:', lamda *
               norm(mul_elemwise(W, (edm_complete - edm_missing))).value)
 
-    return edm_complete
+    return np.array(edm_complete)
     # TODO: why does this not work?
     #Ubest, Sbest, Vbest = np.linalg.svd(Gbest)
     #from basics import eigendecomp
