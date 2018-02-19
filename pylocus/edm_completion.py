@@ -135,15 +135,15 @@ def semidefinite_relaxation(edm_missing, lamda, W=None, print_out=False, **kwarg
     #Xhat = np.diag(factor).dot(u.T)[:d]
 
 
-def completion_acd(edm, X0, W=None):
+def completion_acd(edm, X0, W=None, tol=1e-6, sweeps=3):
     from .algorithms import reconstruct_acd
-    Xhat, costs = reconstruct_acd(edm, X0, W, tol=1e-6, sweeps=3)
+    Xhat, costs = reconstruct_acd(edm, X0, W, tol=tol, sweeps=sweeps)
     return get_edm(Xhat)
 
 
-def completion_dwmds(edm, X0, W=None):
+def completion_dwmds(edm, X0, W=None, tol=1e-10, sweeps=100):
     from .algorithms import reconstruct_dwmds
-    Xhat, costs = reconstruct_dwmds(edm, X0, W, n=1)
+    Xhat, costs = reconstruct_dwmds(edm, X0, W, n=1, tol=tol, sweeps=sweeps)
     return get_edm(Xhat)
 
 
