@@ -16,7 +16,7 @@ class TestSRLS(BaseCommon.TestAlgorithms):
         self.create_points()
         # for d=3, N_missing=2, need at least 6 anchors (no rescale) or 7 anchors (rescaled).
         self.N_relaxed = range(6, 10)
-        self.methods = ['normal', 'rescale']
+        self.methods = ['normal', 'rescale', 'fixed']
         self.eps = 1e-8
 
     def create_points(self, N=10, d=2):
@@ -41,6 +41,10 @@ class TestSRLS(BaseCommon.TestAlgorithms):
         elif method == 'rescale':
             return reconstruct_srls(self.pts.edm, self.pts.points, n=self.n,
                                     W=np.ones(self.pts.edm.shape), rescale=True)
+        elif method == 'fixed' and self.pts.d == 3:
+            return reconstruct_srls(self.pts.edm, self.pts.points, n=self.n,
+                                    W=np.ones(self.pts.edm.shape), rescale=False,
+                                    z=self.pts.points[0, 2])
 
     def test_multiple_weights(self):
         print('TestSRLS:test_multiple')
@@ -71,12 +75,21 @@ class TestSRLS(BaseCommon.TestAlgorithms):
 
         # Normal ranging
         x_srls = SRLS(anchors, w, r2)
-        assert np.allclose(x, x_srls)
+        self.assertTrue(np.allclose(x, x_srls))
 
         # Rescaled ranging
         x_srls_resc, scale = SRLS(anchors, w, sigma * r2, rescale=True)
-        assert abs(1/scale - sigma) < self.eps, 'not equal: {}, {}'.format(scale, sigma)
-        assert np.allclose(x, x_srls_resc)
+        self.assertLess(abs(1/scale - sigma), self.eps, 'not equal: {}, {}'.format(scale, sigma))
+        np.testing.assert_allclose(x, x_srls_resc)
+
+    def test_srls_fixed(self):
+        self.create_points(N=10, d=3)
+        zreal = self.pts.points[0, 2]
+        xhat = reconstruct_srls(self.pts.edm, self.pts.points, n=self.n, 
+                                W=np.ones(self.pts.edm.shape), rescale=False, 
+                                z=self.pts.points[0, 2])
+        self.assertEqual(xhat[0, 2], zreal)
+        np.testing.assert_allclose(xhat, self.pts.points)
 
     def zero_weights(self, noise=0.1):
         print('TestSRLS:test_zero_weights({})'.format(noise))

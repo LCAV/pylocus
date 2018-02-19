@@ -41,7 +41,7 @@ def get_lateration_parameters(real_points, indices, index, edm, W=None):
     return anchors, w, r2
 
 
-def SRLS(anchors, w, r2, rescale=False, print_out=False):
+def SRLS(anchors, w, r2, rescale=False, z=None, print_out=False):
     '''Squared range least squares (SRLS)
 
     Algorithm written by A.Beck, P.Stoica in "Approximate and Exact solutions of Source Localization Problems".
@@ -49,11 +49,12 @@ def SRLS(anchors, w, r2, rescale=False, print_out=False):
     :param anchors: anchor points (Nxd)
     :param w: weights for the measurements (Nx1)
     :param r2: squared distances from anchors to point x. (Nx1)
-    :param rescale: Optional paramters. When set to True, the algorithm will
+    :param rescale: Optional parameter. When set to True, the algorithm will
         also identify if there is a global scaling of the measurements.  Such a
         situation arise for example when the measurement units of the distance is
         unknown and different from that of the anchors locations (e.g. anchors are
         in meters, distance in centimeters).
+    :param z: Optional parameter. Use to fix the z-coordinate of localized point.
     :param print_out: Optional parameter, prints extra information.
 
     :return: estimated position of point x.
@@ -88,7 +89,11 @@ def SRLS(anchors, w, r2, rescale=False, print_out=False):
     n, d = anchors.shape
     assert r2.shape[1] == 1 and r2.shape[0]==n, 'r2 has to be of shape Nx1'
     assert w.shape[1] == 1 and w.shape[0]==n, 'w has to be of shape Nx1'
+    if z is not None:
+        assert d == 3, 'Dimension of problem has to be 3 for fixing z.'
 
+    if rescale and z is not None:
+        raise NotImplementedError('Canoot run rescale for fixed z.')
     if rescale and n < d + 2:
         raise ValueError('A minimum of d + 2 ranges are necessary for rescaled ranging.')
     elif n < d + 1:
@@ -99,28 +104,39 @@ def SRLS(anchors, w, r2, rescale=False, print_out=False):
     if rescale:
         A = np.c_[-2 * anchors, np.ones((n, 1)), -r2]
     else:
-        A = np.c_[-2 * anchors, np.ones((n, 1))]
+        if z is None:
+            A = np.c_[-2 * anchors, np.ones((n, 1))]
+        else:
+            A = np.c_[-2 * anchors[:, :2], np.ones((n, 1))]
+
         A = Sigma.dot(A)
 
     if rescale:
         b = - np.power(np.linalg.norm(anchors, axis=1), 2).reshape(r2.shape)
     else:
         b = r2 - np.power(np.linalg.norm(anchors, axis=1), 2).reshape(r2.shape)
+        if z is not None: 
+            b = b + 2 * anchors[:, 2].reshape((-1, 1)) * z - z**2
         b = Sigma.dot(b)
 
     ATA = np.dot(A.T, A)
 
     if rescale:
         D = np.zeros((d + 2, d + 2))
+        D[:d, :d] = np.eye(d)
     else:
-        D = np.zeros((d + 1, d + 1))
-
-    D[:d, :d] = np.eye(d)
+        if z is None:
+            D = np.zeros((d + 1, d + 1))
+        else:
+            D = np.zeros((d, d))
+        D[:-1, :-1] = np.eye(D.shape[0]-1)
 
     if rescale:
         f = np.c_[np.zeros((1, d)), -0.5, 0.].T
-    else:
+    elif z is None:
         f = np.c_[np.zeros((1, d)), -0.5].T
+    else:
+        f = np.c_[np.zeros((1, 2)), -0.5].T
 
     eig = np.sort(np.real(eigvalsh(a=D, b=ATA)))
     if (print_out):
@@ -158,15 +174,16 @@ def SRLS(anchors, w, r2, rescale=False, print_out=False):
 
     # Compute best estimate
     yhat = y_hat(lambda_opt)
-    print(yhat[:d])
 
     if print_out and rescale:
         print('Scaling factor :', yhat[-1])
 
     if rescale:
         return yhat[:d], yhat[-1]
-    else:
+    elif z is None:
         return yhat[:d]
+    else:
+        return np.r_[yhat[0], yhat[1], z]
 
 
 def PozyxLS(anchors, W, r2, print_out=False):
