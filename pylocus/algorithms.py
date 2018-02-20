@@ -215,14 +215,16 @@ def reconstruct_acd(edm, X0, W=None, print_out=False, tol=1e-10, sweeps=10):
     """
 
     def get_unique_delta(delta, i, coord):
+        ftest = []
+        for de in delta:
+            X_ktest = X_k.copy()
+            X_ktest[i, coord] += de
+            ftest.append(f(X_ktest, edm, W))
+        # choose delta with lowest cost.
+        delta = delta[ftest == min(ftest)]
         if len(delta) > 1:
-            print('found multiple deltas')
-            ftest = []
-            for de in delta:
-                X_ktest = X_k.copy()
-                X_ktest[i, coord] += de
-                ftest.append(f(X_ktest, edm, W))
-            delta = delta[ftest == min(ftest)]
+            # if multiple deltas give the same cost, choose the biggest step.
+            delta = max(delta)
         return delta
 
     def sweep():
@@ -231,7 +233,8 @@ def reconstruct_acd(edm, X0, W=None, print_out=False, tol=1e-10, sweeps=10):
 
     def loop_coordinate(coord, i):
         delta = get_step_size(i, coord, X_k, edm, W)
-        delta = get_unique_delta(delta, i, coord)
+        if len(delta) > 1:
+            delta = get_unique_delta(delta, i, coord)
         X_k[i, coord] += delta
         cost_this = f(X_k, edm, W)
         costs.append(cost_this)
