@@ -214,18 +214,24 @@ def reconstruct_acd(edm, X0, W=None, print_out=False, tol=1e-10, sweeps=10):
     :param X0: Nxd matrix of starting points.
     """
 
-    def get_unique_delta(delta, i, coord):
+    def get_unique_delta(delta, i, coord, print_out=False):
+        delta_unique = delta.copy()
         ftest = []
-        for de in delta:
+        for de in delta_unique:
             X_ktest = X_k.copy()
             X_ktest[i, coord] += de
             ftest.append(f(X_ktest, edm, W))
-        # choose delta with lowest cost.
-        delta = delta[ftest == min(ftest)]
-        if len(delta) > 1:
-            # if multiple deltas give the same cost, choose the biggest step.
-            delta = max(delta)
-        return delta
+        # choose delta_unique with lowest cost.
+        if print_out:
+            print(ftest)
+            print(delta_unique)
+        delta_unique = delta_unique[ftest == min(ftest)]
+        if print_out:
+            print(delta_unique)
+        if len(delta_unique) > 1:
+            # if multiple delta_uniques give the same cost, choose the biggest step.
+            delta_unique = max(delta_unique)
+        return delta_unique
 
     def sweep():
         for i in range(N):
@@ -234,12 +240,22 @@ def reconstruct_acd(edm, X0, W=None, print_out=False, tol=1e-10, sweeps=10):
     def loop_coordinate(coord, i):
         delta = get_step_size(i, coord, X_k, edm, W)
         if len(delta) > 1:
-            delta = get_unique_delta(delta, i, coord)
-        X_k[i, coord] += delta
+            delta_unique = get_unique_delta(delta, i, coord)
+        elif len(delta) == 1:
+            delta_unique = delta[0]
+        else:
+            print('Warning: did not find delta!', delta)
+            delta_unique = 0.0
+        try:
+            X_k[i, coord] += delta_unique
+        except:
+            get_unique_delta(delta, i, coord, print_out=True)
+            raise
+
         cost_this = f(X_k, edm, W)
         costs.append(cost_this)
 
-        if delta <= tol:
+        if delta_unique <= tol:
             coordinates_converged[i, coord] += 1
         else:
             if print_out:
