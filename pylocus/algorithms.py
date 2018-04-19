@@ -126,7 +126,7 @@ def reconstruct_emds(edm, Om, real_points, method=None, **kwargs):
     return Y
 
 
-def reconstruct_smds(dm, absolute_angles, real_points, W=None):
+def reconstruct_cdm(dm, absolute_angles, real_points, W=None):
     """ Reconstruct point set using signed Multidimensional Scaling.
     """
     from pylocus.point_set import dmi_from_V, sdm_from_dmi, get_V

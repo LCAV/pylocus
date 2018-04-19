@@ -44,6 +44,7 @@ class PointSet:
         self.init()
 
     def set_points(self, mode, points=None, range_=RANGE, size=1):
+        # TODO: make all modes use range_ properly. 
         """ Initialize points according to predefined modes.
 
         :param range_:[xmin, xmax, ymin, ymax], range of point sets
@@ -140,10 +141,11 @@ class PointSet:
         elif mode == 'normal':
             self.points = np.random.normal(0, size, (self.N, self.d))
         elif mode == 'circle':
-            x_range = (range_[1] - range_[0]) / 2.0
-            y_range = (range_[3] - range_[2]) / 2.0
-            c = np.array((range_[0] + x_range,
-                          range_[2] + y_range))
+            from math import cos, sin
+            x_range = size / 2.0
+            y_range = size / 2.0
+            c = np.array((x_range,
+                          y_range))
             r = 0.9 * min(x_range, y_range)
             theta = 2 * pi / self.N
             for i in range(self.N):
