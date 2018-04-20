@@ -87,18 +87,20 @@ def SRLS(anchors, w, r2, rescale=False, z=None, print_out=False):
     from scipy.linalg import sqrtm
 
     n, d = anchors.shape
-    assert r2.shape[1] == 1 and r2.shape[0]==n, 'r2 has to be of shape Nx1'
-    assert w.shape[1] == 1 and w.shape[0]==n, 'w has to be of shape Nx1'
+    assert r2.shape[1] == 1 and r2.shape[0] == n, 'r2 has to be of shape Nx1'
+    assert w.shape[1] == 1 and w.shape[0] == n, 'w has to be of shape Nx1'
     if z is not None:
         assert d == 3, 'Dimension of problem has to be 3 for fixing z.'
 
     if rescale and z is not None:
         raise NotImplementedError('Canoot run rescale for fixed z.')
     if rescale and n < d + 2:
-        raise ValueError('A minimum of d + 2 ranges are necessary for rescaled ranging.')
+        raise ValueError(
+            'A minimum of d + 2 ranges are necessary for rescaled ranging.')
     elif n < d + 1:
-        raise ValueError('A minimum of d + 1 ranges are necessary for ranging.')
-    
+        raise ValueError(
+            'A minimum of d + 1 ranges are necessary for ranging.')
+
     Sigma = np.diagflat(np.power(w, 0.5))
 
     if rescale:
@@ -115,7 +117,7 @@ def SRLS(anchors, w, r2, rescale=False, z=None, print_out=False):
         b = - np.power(np.linalg.norm(anchors, axis=1), 2).reshape(r2.shape)
     else:
         b = r2 - np.power(np.linalg.norm(anchors, axis=1), 2).reshape(r2.shape)
-        if z is not None: 
+        if z is not None:
             b = b + 2 * anchors[:, 2].reshape((-1, 1)) * z - z**2
         b = Sigma.dot(b)
 

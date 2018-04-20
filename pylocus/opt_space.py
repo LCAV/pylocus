@@ -1,5 +1,5 @@
 #!/usr/bin/env python
-# module OPTSPACE
+# module OPT_SPACE
 """
 Python implementation of OptSpace algorithm for matrix completion.
 
@@ -114,7 +114,7 @@ def opt_space(M_E, r=None, niter=50, tol=1e-6, print_out=False):
         if print_out:
             print('%d\t\t\t%e' % (i + 1, errs[i + 1]))
 
-        if abs(errs[i + 1] - errs[i])< tol:
+        if abs(errs[i + 1] - errs[i]) < tol:
             break
     S = S / rescal_param
 

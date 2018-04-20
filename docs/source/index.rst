@@ -22,7 +22,9 @@ pylocus is a Python package designed to solve general localization problems, :ma
 where :math:`X` is a :math:`N` x :math:`d` matrix of coordinates of a point set and
 :math:`L(X)` is a cost function adapted to the problem at hand. 
 
-The goal is to find the best location of all or some points in :math:`X`. 
+The goal is to find the best location of all or some points in :math:`X`. Usually, the cost function penalizes the difference between measured and reconstructed signals, such as range, direction or other modalities. 
+
+Note that for now, this documentation is written as a convenient entry point to understand the code structure. For detailed instructions on how to use particular function, please dig into the source code.  
 
 Source code is on GitHub : https://github.com/LCAV/pylocus.
 
@@ -68,6 +70,7 @@ Module contents
    :nosignatures:
 
    reconstruct_emds
+   reconstruct_cdm
 
 Contribute
 ==========

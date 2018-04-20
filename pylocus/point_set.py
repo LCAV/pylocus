@@ -71,8 +71,6 @@ class PointSet:
                 found = False
                 safety_it = 0
                 while not found:
-                    # TODO: this doesn't end up on the good side of the triangle.
-                    # on one side of triangle
                     alpha = np.random.uniform(tol, 1 - tol)
                     beta = 1.0 - alpha
                     gamma = 2 * np.random.rand(1) + tol
@@ -140,10 +138,10 @@ class PointSet:
         elif mode == 'normal':
             self.points = np.random.normal(0, size, (self.N, self.d))
         elif mode == 'circle':
-            x_range = (range_[1] - range_[0]) / 2.0
-            y_range = (range_[3] - range_[2]) / 2.0
-            c = np.array((range_[0] + x_range,
-                          range_[2] + y_range))
+            from math import cos, sin
+            x_range = size / 2.0
+            y_range = size / 2.0
+            c = np.array((x_range, y_range))
             r = 0.9 * min(x_range, y_range)
             theta = 2 * pi / self.N
             for i in range(self.N):
@@ -236,7 +234,6 @@ class AngleSet(PointSet):
         self.create_theta()
 
     def create_abs_angles_from_edm(self):
-        #TODO: which one is better?
         rows, cols = np.indices((self.N, self.N))
         pi_pj_x = (self.points[rows, 0] - self.points[cols, 0])
         pi_pj_y = (self.points[rows, 1] - self.points[cols, 1])
@@ -289,7 +286,6 @@ class AngleSet(PointSet):
         self.corners = corners
         return theta, corners
 
-# TODO: Which of the two below should be used?
     def get_inner_angle(self, corner, other):
         from .basics_angles import get_inner_angle
         return get_inner_angle(self.points[corner, :], (
@@ -352,9 +348,6 @@ class AngleSet(PointSet):
                 plot_thetas_in_one([self.theta, theta], ['original', 'noise'])
             return theta
 
-
-# TODO: where do I need the three below?
-
     def get_tensor_edm(self):
         D = np.empty([self.N * self.d, self.N * self.d])
         for i in range(self.N):
@@ -370,7 +363,6 @@ class AngleSet(PointSet):
         return D
 
     def get_closed_form(self, edm):
-        #TODO: what is this?
         Daug = self.get_tensor_edm()
         T = np.empty([self.N, self.N, self.N])
         for i in range(self.N):
@@ -394,7 +386,7 @@ class AngleSet(PointSet):
         self.theta_tensor = get_theta_tensor(self.theta, self.corners, self.N)
         return self.theta_tensor
 
-# TODO: This is for iterative algorithm only...
+# Iterative angle cleaning algorithm
 
     def get_indices(self, k):
         """ Get indices of theta vector that have k as first corner.
@@ -439,8 +431,6 @@ class AngleSet(PointSet):
                 G[idx, jdx] = cos(thetak_ij)
                 G[jdx, idx] = cos(thetak_ij)
         return G
-
-# TODO: Which of these two is better? And should they really be in this class?
 
     def reconstruct_from_inner_angles(self, theta):
         from .algorithms import reconstruct_from_inner_angles
@@ -658,7 +648,8 @@ class HeterogenousSet(PointSet):
         for i in range(self.m):
             for j in range(self.m):
                 if i != j:
-                    norm = np.linalg.norm(self.V[i, :]) * np.linalg.norm(self.V[j, :])
+                    norm = np.linalg.norm(
+                        self.V[i, :]) * np.linalg.norm(self.V[j, :])
                     cos_inner_angle = np.dot(self.V[i, :], self.V[
                                              j, :]) / norm
                 else:
@@ -697,14 +688,13 @@ class HeterogenousSet(PointSet):
 def dm_from_edm(edm):
     from .basics import vector_from_matrix
     dm = vector_from_matrix(edm)
-    # TODO: make sure this is not necessary.
     dm = np.extract(dm > 0, dm)
     return np.power(dm, 0.5)
 
 
 def edm_from_dm(dm, N):
     from .basics import matrix_from_vector
-    edm_upper  = matrix_from_vector(dm, N)
+    edm_upper = matrix_from_vector(dm, N)
     edm = np.power(edm_upper + edm_upper.T, 2.0)
     return edm
 

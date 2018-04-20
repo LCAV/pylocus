@@ -126,8 +126,8 @@ def reconstruct_emds(edm, Om, real_points, method=None, **kwargs):
     return Y
 
 
-def reconstruct_smds(dm, absolute_angles, real_points, W=None):
-    """ Reconstruct point set using signed Multidimensional Scaling.
+def reconstruct_cdm(dm, absolute_angles, real_points, W=None):
+    """ Reconstruct point set from angle and distance measurements, using coordinate difference matrices.
     """
     from pylocus.point_set import dmi_from_V, sdm_from_dmi, get_V
     from pylocus.mds import signedMDS
@@ -203,7 +203,7 @@ def reconstruct_srls(edm, real_points, W=None, print_out=False, n=1, rescale=Fal
             print('SRLS parameters:', anchors, w, r2)
         srls = SRLS(anchors, w, r2, rescale, z, print_out)
         if rescale:
-            srls = srls[0] # second element of output is the scale
+            srls = srls[0]  # second element of output is the scale
         Y[index, :] = srls
     return Y
 
@@ -278,7 +278,7 @@ def reconstruct_acd(edm, X0, W=None, print_out=False, tol=1e-10, sweeps=10):
 
     N, d = X0.shape
     if W is None:
-        W = np.ones((N,N)) - np.eye(N)
+        W = np.ones((N, N)) - np.eye(N)
 
     X_k = X0.copy()
 
@@ -287,7 +287,7 @@ def reconstruct_acd(edm, X0, W=None, print_out=False, tol=1e-10, sweeps=10):
     coord_n_it = 3
     for sweep_counter in range(sweeps):
         if print_out:
-            print('= sweep',sweep_counter)
+            print('= sweep', sweep_counter)
         sweep()
         if (coordinates_converged >= 2).all():
             if (print_out):
@@ -313,12 +313,12 @@ def reconstruct_dwmds(edm, X0, W=None, n=None, r=None, X_bar=None, print_out=Fal
         raise ValueError('either r or n have to be given.')
     elif n is None:
         n = r.shape[0]
-    
+
     if W is None:
-        W = np.ones((N,N)) - np.eye(N)
+        W = np.ones((N, N)) - np.eye(N)
 
     X_k = X0.copy()
-    
+
     costs = []
     # don't have to ignore i=j, because W[i,i] is zero.
     a = np.sum(W[:n, :n], axis=1).flatten() + 2 * \
@@ -331,7 +331,8 @@ def reconstruct_dwmds(edm, X0, W=None, n=None, r=None, X_bar=None, print_out=Fal
             edm_estimated = get_edm(X_k)
             bi = get_b(i, edm_estimated, W, edm, n)
             if r is not None and X_bar is not None:
-                X_k[i] = 1 / a[i] * (r[i] * X_bar[i, :] + X_k.T.dot(bi).flatten())
+                X_k[i] = 1 / a[i] * (r[i] * X_bar[i, :] +
+                                     X_k.T.dot(bi).flatten())
                 Si = get_Si(i, edm_estimated, edm, W, n, r, X_bar[i], X_k[i])
             else:
                 X_k[i] = 1 / a[i] * X_k.T.dot(bi).flatten()
