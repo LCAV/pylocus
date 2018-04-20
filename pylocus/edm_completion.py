@@ -120,7 +120,6 @@ def semidefinite_relaxation(edm_missing, lamda, W=None, print_out=False, **kwarg
     else:
         edm_complete = edm_missing
 
-    # TODO why do these two not sum up to the objective?
     if (print_out):
         if H.value is not None:
             print('trace of H:', np.trace(H.value))
@@ -128,11 +127,6 @@ def semidefinite_relaxation(edm_missing, lamda, W=None, print_out=False, **kwarg
               norm(mul_elemwise(W, (edm_complete - edm_missing))).value)
 
     return np.array(edm_complete)
-    # TODO: why does this not work?
-    #Ubest, Sbest, Vbest = np.linalg.svd(Gbest)
-    #from basics import eigendecomp
-    #factor, u = eigendecomp(Gbest, d)
-    #Xhat = np.diag(factor).dot(u.T)[:d]
 
 
 def completion_acd(edm, X0, W=None, tol=1e-6, sweeps=3):

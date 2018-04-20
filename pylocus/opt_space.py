@@ -1,5 +1,5 @@
 #!/usr/bin/env python
-# module OPT_PACE
+# module OPT_SPACE
 """
 Python implementation of OptSpace algorithm for matrix completion.
 
