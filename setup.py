@@ -12,7 +12,7 @@ setup(
 
     name='pylocus',
 
-    version='1.0.1',
+    version='1.0.2',
 
     description='Localization Package',
 
@@ -92,4 +92,9 @@ setup(
         #    'sample=sample:main',
         #],
     },
+
+    project_urls={
+        'Source': 'https://github.com/lcav/pylocus',
+        'Documentation': 'http://pylocus.readthedocs.io/en/latest/'
+    }
 )
