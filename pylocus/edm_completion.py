@@ -148,4 +148,4 @@ def completion_dwmds(edm, X0, W=None, tol=1e-10, sweeps=100):
 
 
 if __name__ == "__main__":
-    print('nothing happens when running this module. It is only a container of functions.')
+    print('nothing happens when running this module.')

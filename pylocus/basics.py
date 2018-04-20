@@ -147,3 +147,7 @@ def matrix_from_vector(vector, N):
     matrix = np.zeros((N, N))
     matrix[triu_idx[0], triu_idx[1]] = vector
     return matrix
+
+
+if __name__ == "__main__":
+    print('nothing happens when running this module.')

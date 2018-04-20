@@ -16,7 +16,9 @@ def x_from_eigendecomp(factor, u, dim):
     return np.dot(np.diag(factor[:]), u.T)[:dim, :]
 
 
-def MDS(D, dim, method='simple', theta=True):
+def MDS(D, dim, method='simple', theta=False):
+    """ recover points from euclidean distance matrix using classic MDS algorithm. 
+    """
     N = D.shape[0]
     if method == 'simple':
         d1 = D[0, :]
@@ -48,6 +50,8 @@ def MDS(D, dim, method='simple', theta=True):
 
 
 def superMDS(X0, N, d, **kwargs):
+    """ Find the set of points from an edge kernel.
+    """
     Om = kwargs.get('Om', None)
     dm = kwargs.get('dm', None)
     if Om is not None and dm is not None:
@@ -78,6 +82,8 @@ def superMDS(X0, N, d, **kwargs):
 
 
 def iterativeEMDS(X0, N, d, C, b, max_it=10, print_out=False, **kwargs):
+    """ Find the set of points from an edge kernel with geometric constraints, using iterative projection 
+    """
     from pylocus.basics import mse, projection
     KE = kwargs.get('KE', None)
     KE_projected = KE.copy()
@@ -105,6 +111,8 @@ def iterativeEMDS(X0, N, d, C, b, max_it=10, print_out=False, **kwargs):
 
 
 def relaxedEMDS(X0, N, d, C, b, KE, print_out=False, lamda=10):
+    """ Find the set of points from an edge kernel with geometric constraints, using convex rank relaxation.
+    """
     E = C.shape[1]
     X = Semidef(E)
 
@@ -120,7 +128,8 @@ def relaxedEMDS(X0, N, d, C, b, KE, print_out=False, lamda=10):
         try:
             print('CVXOPT with default cholesky failed. Trying kktsolver...')
             # kktsolver is more robust than default (cholesky), even though slower.
-            total_cost = prob.solve(solver='CVXOPT', verbose=print_out, kktsolver="robust")
+            total_cost = prob.solve(
+                solver='CVXOPT', verbose=print_out, kktsolver="robust")
         except:
             try:
                 print('CVXOPT with robust kktsovler failed. Trying SCS...')
@@ -136,7 +145,7 @@ def relaxedEMDS(X0, N, d, C, b, KE, print_out=False, lamda=10):
 
 def signedMDS(cdm, W=None):
     """ Find the set of points from a cdm.
-    Not all the distances have to be known. They can be noisy  """
+    """
 
     N = cdm.shape[0]
 
@@ -160,4 +169,4 @@ def signedMDS(cdm, W=None):
 
 
 if __name__ == "__main__":
-    print('nothing happens when running this module. It is only a container of functions.')
+    print('nothing happens when running this module.')

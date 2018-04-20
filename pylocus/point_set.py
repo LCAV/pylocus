@@ -44,7 +44,7 @@ class PointSet:
         self.init()
 
     def set_points(self, mode, points=None, range_=RANGE, size=1):
-        # TODO: make all modes use range_ properly. 
+        # TODO: make all modes use range_ properly.
         """ Initialize points according to predefined modes.
 
         :param range_:[xmin, xmax, ymin, ymax], range of point sets
@@ -144,8 +144,7 @@ class PointSet:
             from math import cos, sin
             x_range = size / 2.0
             y_range = size / 2.0
-            c = np.array((x_range,
-                          y_range))
+            c = np.array((x_range, y_range))
             r = 0.9 * min(x_range, y_range)
             theta = 2 * pi / self.N
             for i in range(self.N):
@@ -660,7 +659,8 @@ class HeterogenousSet(PointSet):
         for i in range(self.m):
             for j in range(self.m):
                 if i != j:
-                    norm = np.linalg.norm(self.V[i, :]) * np.linalg.norm(self.V[j, :])
+                    norm = np.linalg.norm(
+                        self.V[i, :]) * np.linalg.norm(self.V[j, :])
                     cos_inner_angle = np.dot(self.V[i, :], self.V[
                                              j, :]) / norm
                 else:
@@ -706,7 +706,7 @@ def dm_from_edm(edm):
 
 def edm_from_dm(dm, N):
     from .basics import matrix_from_vector
-    edm_upper  = matrix_from_vector(dm, N)
+    edm_upper = matrix_from_vector(dm, N)
     edm = np.power(edm_upper + edm_upper.T, 2.0)
     return edm
 

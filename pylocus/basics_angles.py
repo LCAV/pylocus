@@ -3,6 +3,7 @@
 from math import atan2, pi
 import numpy as np
 
+
 def change_angles(method, theta, tol=1e-10):
     """ Function used by all angle conversion functions (from_x_to_x_pi(...))"""
     try:

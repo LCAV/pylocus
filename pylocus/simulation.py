@@ -1,6 +1,7 @@
 #!/usr/bin/env python
-# module SIMULATION_PARAMETERS
+# module SIMULATION
 import numpy as np
+
 
 def weights_one(N, noise, noise_edm):
     weights = np.ones((N, N))
@@ -98,5 +99,5 @@ def create_mask(N, method='all', nmissing=0):
     return weights
 
 
-if __name__=="__main__":
-    print('nothing happens when running this module. It is only a container of functions.')
+if __name__ == "__main__":
+    print('nothing happens when running this module.')
