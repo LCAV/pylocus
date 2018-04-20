@@ -134,13 +134,13 @@ def relaxedEMDS(X0, N, d, C, b, KE, print_out=False, lamda=10):
     return Xhat_KE, Vhat_KE
 
 
-def signedMDS(sdm, W=None):
-    """ Find the set of points from a sdm.
+def signedMDS(cdm, W=None):
+    """ Find the set of points from a cdm.
     Not all the distances have to be known. They can be noisy  """
 
-    N = sdm.shape[0]
+    N = cdm.shape[0]
 
-    D_sym = (sdm - sdm.T) / 2
+    D_sym = (cdm - cdm.T) / 2
 
     if W is None:
         x_est = np.mean(D_sym, axis=1)
