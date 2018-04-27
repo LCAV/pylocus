@@ -84,7 +84,7 @@ def eigendecomp(G, d):
 
     u = u[:, indices]
     factor = np.empty((N,), dtype=lamda.dtype)
-    factor[0:d] = np.sqrt(lamda_sorted[:d], out=factor[0:d])
+    np.sqrt(lamda_sorted[:d], out=factor[0:d])
     factor[d:] = 0.0
     return factor, np.real(u)
 
