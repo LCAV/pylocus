@@ -114,13 +114,6 @@ def divide_where_nonzero(divide_this, by_this):
 
 def get_rotation_matrix(thetas):
     theta_x, theta_y, theta_z = thetas
-#    cx, sx = np.cos(theta_x), np.sin(theta_x)
-#    Rx = np.array([[1, 0, 0], [0, cx, sx], [0, -sx, cx]])
-#    cy, sy = np.cos(theta_y), np.sin(theta_y)
-#    Ry = np.array([[1, 0, 0], [0, cy, sy], [0, -sy, cy]])
-#    cz, sz = np.cos(theta_z), np.sin(theta_z)
-#    Rz = np.array([[1, 0, 0], [0, cz, sz], [0, -sz, cz]])
-#    return Rx.dot(Ry.dot(Rz))
     # N.B.:
     # because Rx, Ry, Rz are all rotations in YZ plane, composition of these rotations
     # is equivalent to one rotation through angle theta_x + theta_y + theta_z

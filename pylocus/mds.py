@@ -153,7 +153,8 @@ def signedMDS(cdm, W=None):
 
     if W is None:
         x_est = np.mean(D_sym, axis=1)
-        return x_est - np.min(x_est)
+        x_est -= np.min(x_est)
+        return x_est
 
     W_sub = W[1:, 1:]
     sum_W = np.sum(W[1:, :], axis=1)
@@ -164,8 +165,9 @@ def signedMDS(cdm, W=None):
 
     x_est = np.linalg.lstsq(A, d)[0]
     x_est = np.r_[[0], x_est]
+    x_est -= np.min(x_est)
 
-    return x_est - np.min(x_est), A, np.linalg.pinv(A)
+    return x_est, A, np.linalg.pinv(A)
 
 
 if __name__ == "__main__":
