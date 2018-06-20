@@ -100,10 +100,10 @@ def semidefinite_relaxation(edm_missing, lamda, W=None, print_out=False, **kwarg
 
     if method == 'maximize':
         obj = Maximize(trace(H) - lamda *
-                       norm(mul_elemwise(W, (edm_optimize - edm_missing))))
+                       norm(mul_elemwise(W, (edm_optimize - edm_missing)), p=1))
     elif method == 'minimize':
         obj = Minimize(trace(H) + lamda *
-                       norm(mul_elemwise(W, (edm_optimize - edm_missing))))
+                       norm(mul_elemwise(W, (edm_optimize - edm_missing)), p=1))
 
     prob = Problem(obj)
 
@@ -124,7 +124,7 @@ def semidefinite_relaxation(edm_missing, lamda, W=None, print_out=False, **kwarg
         if H.value is not None:
             print('trace of H:', np.trace(H.value))
         print('other cost:', lamda *
-              norm(mul_elemwise(W, (edm_complete - edm_missing))).value)
+              norm(mul_elemwise(W, (edm_complete - edm_missing)), p=1).value)
 
     return np.array(edm_complete)
 
