@@ -3,7 +3,7 @@
 import numpy as np
 
 
-def execute_method(method, noisy_edm=None, real_points=None, W=None, **kwargs):
+def execute_method(method, noisy_edm=None, real_points=None, W=None, z=None, **kwargs):
     if method == 'MDS':
         xhat = reconstruct_mds(
             noisy_edm, real_points=real_points, method='geometric')
@@ -32,7 +32,7 @@ def execute_method(method, noisy_edm=None, real_points=None, W=None, **kwargs):
         n = kwargs.get('n', None)
         rescale = kwargs.get('rescale', False)
         xhat = reconstruct_srls(noisy_edm, real_points,
-                                n=n, W=W, rescale=rescale)
+                                n=n, W=W, rescale=rescale, z=z)
     return xhat
 
 
