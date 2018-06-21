@@ -97,9 +97,12 @@ def SRLS(anchors, w, r2, rescale=False, z=None, print_out=False):
     if rescale and n < d + 2:
         raise ValueError(
             'A minimum of d + 2 ranges are necessary for rescaled ranging.')
-    elif n < d + 1:
+    elif n < d + 1 and z is None:
         raise ValueError(
             'A minimum of d + 1 ranges are necessary for ranging.')
+    elif n < d:
+        raise ValueError(
+            'A minimum of d ranges are necessary for ranging.')
 
     Sigma = np.diagflat(np.power(w, 0.5))
 
