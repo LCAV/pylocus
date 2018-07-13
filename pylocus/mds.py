@@ -16,7 +16,7 @@ def theta_from_eigendecomp(factor, u):
 
 def x_from_eigendecomp(factor, u, dim):
 #    return np.dot(np.diag(factor[:]), u.T)[:dim, :]
-    return ((f * u).T)[:dim, :]
+    return ((factor * u).T)[:dim, :]
 
 
 def MDS(D, dim, method='simple', theta=False):

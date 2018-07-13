@@ -1,33 +1,13 @@
 language: python
 python:
-  - 3.5
-
-notifications:
-  email: frederike.duembgen@epfl.ch
+  - "3.5"
+  - "3.6"
 
 install:
-  - sudo apt-get update
-  # We do this conditionally because it saves us some downloading if the
-  # version is the same.
-  - wget https://repo.continuum.io/miniconda/Miniconda3-latest-Linux-x86_64.sh -O miniconda.sh;
-  - bash miniconda.sh -b -p $HOME/miniconda
-  - export PATH="$HOME/miniconda/bin:$PATH"
-  - hash -r
-  - conda config --set always_yes yes --set changeps1 no
-  - conda update -q conda
-  # Useful for debugging any issues with conda
-  - conda info -a
-
-  # We need to setup a new environment
-  - conda create -n test_env python=3
-  - source activate test_env
-
-  # Install the dependencies
-  - conda install --yes pip numpy scipy matplotlib pytest
   - pip install -r requirements.txt
-  - python setup.py install
 
 script:
   - pytest
 
-sudo: false #explicitly select default infrastructure
+notifications:
+  email: frederike.duembgen@epfl.ch

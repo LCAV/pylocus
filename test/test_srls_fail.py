@@ -10,7 +10,7 @@ test_srls_fail.py:
 """
 import unittest
 import numpy as np
-from test_common import BaseCommon
+from .test_common import BaseCommon
 
 from pylocus.algorithms import reconstruct_srls
 from pylocus.basics import get_edm

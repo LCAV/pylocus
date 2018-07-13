@@ -151,7 +151,7 @@ def projection(x, A, b):
     # x_hat = x - A_pseudoinv.dot(A.dot(x) - b)
     tmp_ = A.dot(x)
     tmp_ -= b
-    x_hat = A_psedoinv.dot(tmp_)
+    x_hat = A_pseudoinv.dot(tmp_)
     np.subtract(x, x_hat, out=x_hat)
 
     cost = mse(x_hat, x)
