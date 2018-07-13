@@ -78,7 +78,7 @@ def semidefinite_relaxation(edm_missing, lamda, W=None, print_out=False, **kwarg
 
     def kappa_cvx(gram, n):
         e = np.ones((n, 1))
-        return diag(gram) * e.T + e * diag(gram).T - 2 * gram
+        return reshape(diag(gram), (n, 1)) * e.T + e * reshape(diag(gram), (1, n)) - 2 * gram
 
     method = kwargs.pop('method', 'maximize')
     options = {'solver': 'CVXOPT'}
@@ -90,20 +90,21 @@ def semidefinite_relaxation(edm_missing, lamda, W=None, print_out=False, **kwarg
         W[edm_missing == 0] = 0.0
 
     n = edm_missing.shape[0]
-    V = np.c_[-np.ones(n - 1) / np.sqrt(n), np.eye(n - 1) -
-              np.ones([n - 1, n - 1]) / (n + np.sqrt(n))].T
+    V = np.c_[-np.ones((n - 1, 1)) / np.sqrt(n), np.eye(n - 1) -
+              np.ones((n - 1, n - 1)) / (n + np.sqrt(n))].T
 
     # Creates a n-1 by n-1 positive semidefinite variable.
-    H = Semidef(n - 1)
+    H = Variable((n - 1, n - 1), PSD=True)
     G = V * H * V.T  # * is overloaded
+    print(G.shape)
     edm_optimize = kappa_cvx(G, n)
 
     if method == 'maximize':
         obj = Maximize(trace(H) - lamda *
-                       norm(mul_elemwise(W, (edm_optimize - edm_missing))))
+                       norm(multiply(W, (edm_optimize - edm_missing))))
     elif method == 'minimize':
         obj = Minimize(trace(H) + lamda *
-                       norm(mul_elemwise(W, (edm_optimize - edm_missing))))
+                       norm(multiply(W, (edm_optimize - edm_missing))))
 
     prob = Problem(obj)
 
@@ -113,7 +114,7 @@ def semidefinite_relaxation(edm_missing, lamda, W=None, print_out=False, **kwarg
         print('SDP status:', prob.status)
 
     if H.value is not None:
-        Gbest = V * H.value * V.T
+        Gbest = V.dot(H.value).dot(V.T)
         if print_out:
             print('eigenvalues:', np.sum(np.linalg.eigvals(Gbest)[2:]))
         edm_complete = kappa(Gbest)
@@ -124,7 +125,7 @@ def semidefinite_relaxation(edm_missing, lamda, W=None, print_out=False, **kwarg
         if H.value is not None:
             print('trace of H:', np.trace(H.value))
         print('other cost:', lamda *
-              norm(mul_elemwise(W, (edm_complete - edm_missing))).value)
+              norm(multiply(W, (edm_complete - edm_missing))).value)
 
     return np.array(edm_complete)
 

@@ -3,7 +3,7 @@
 
 import unittest
 import numpy as np
-from test_common import BaseCommon
+from .test_common import BaseCommon
 
 from pylocus.point_set import HeterogenousSet
 from pylocus.algorithms import reconstruct_emds

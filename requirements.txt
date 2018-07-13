@@ -1,2 +1,2 @@
-cvxpy >= 0.4.10
+cvxpy >= 1.0.6
 cvxopt
