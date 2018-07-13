@@ -68,7 +68,8 @@ def get_inner_angle(Pk, Pij):
 def rmse_2pi(x, xhat):
     ''' Calcualte rmse between vector or matrix x and xhat, ignoring mod of 2pi.'''
     real_diff = from_0_to_pi(x - xhat)
-    sum_ = np.sum(np.power(real_diff, 2))
+    np.square(real_diff, out=real_diff)
+    sum_ = np.sum(real_diff)
     return sqrt(sum_ / len(x))
 
 

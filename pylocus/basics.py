@@ -5,8 +5,11 @@ from math import pi, atan, atan2, sqrt, acos, cos, sin
 
 def mse(x, xhat):
     """ Calcualte mse between vector or matrix x and xhat """
-    sum_ = np.sum(np.power(x - xhat, 2))
-    return sum_ / x.size
+    buf_ = x - xhat
+    np.square(buf_, out=buf_) # square in-place
+    sum_ = np.sum(buf_)
+    sum_ /= x.size  # divide in-place
+    return sum_
 
 
 def rmse(x, xhat):
@@ -16,7 +19,10 @@ def rmse(x, xhat):
 
 
 def norm(x, xhat):
-    return sqrt(np.sum(np.power(x - xhat, 2)))
+    buf_ = x - xhat
+    np.square(buf_, out=buf_) # square in-place
+    sum_ = np.sum(buf_)
+    return sqrt(sum_)
 
 
 def low_rank_approximation(A, r):
@@ -28,9 +34,13 @@ def low_rank_approximation(A, r):
         print('Matrix rank:', np.linalg.matrix_rank(A))
         raise
 
-    Ar = np.zeros((len(u), len(v)))
+    Ar = np.zeros((len(u), len(v)), dtype=u.dtype)
+    buf_ = np.empty_like(Ar)
+    sc_vec_ = np.empty((v.shape[1],), dtype=v.dtype)
     for i in range(r):
-        Ar += s[i] * np.outer(u.T[i], v[i])
+        np.multiply(v[i], s[i], out=sc_vec_)
+        np.outer(u[:, i], sc_vec_, out=buf_)
+        Ar += buf_
     return Ar
 
 
@@ -62,20 +72,21 @@ def eigendecomp(G, d):
     N = G.shape[0]
     lamda, u = np.linalg.eig(G)
     # test decomposition of G.
-    G_hat = np.dot(np.dot(u, np.diag(lamda)), u.T)
+    #G_hat = np.dot(np.dot(u, np.diag(lamda)), u.T)
     #assert np.linalg.norm(G_hat - G) < 1e-10, 'decomposition not exact: err {}'.format(np.linalg.norm(G_hat - G))
 
     # sort the eigenvalues in decreasing order
-    indices = np.argsort(np.real(lamda))[::-1]
     lamda = np.real(lamda)
+    indices = np.argsort(lamda)[::-1]
     lamda_sorted = lamda[indices]
     assert (lamda_sorted[
             :d] > -1e-10).all(), "{} not all positive!".format(lamda_sorted[:d])
 
     u = u[:, indices]
-    factor = np.zeros((N,))
-    factor[0:d] = np.sqrt(lamda_sorted[:d])
-    return np.real(factor), np.real(u)
+    factor = np.empty((N,), dtype=lamda.dtype)
+    np.sqrt(lamda_sorted[:d], out=factor[0:d])
+    factor[d:] = 0.0
+    return factor, np.real(u)
 
 
 def assert_print(this_should_be_less_than, this=1e-10):
@@ -89,26 +100,34 @@ def assert_all_print(this_should_be_less_than, this=1e-10):
 
 
 def divide_where_nonzero(divide_this, by_this):
-    result = np.zeros(divide_this.shape)
-    result[by_this != 0] = divide_this[by_this != 0] / by_this[by_this != 0]
+    result = np.empty_like(divide_this)
+    zero_mask = (by_this == 0)
+    if zero_mask.size:
+        result[zero_mask] = 0.0
+        nonzero_mask = mask                         # creates a view
+        np.logical_not(zero_mask, out=nonzero_mask) # overwrites memory of zero_mask
+        result[nonzero_mask] = divide_this[nonzero_mask] / by_this[nonzero_mask]
+    else:
+        np.divide(divide_this, by_this, out=result) # more efficient, in-place operation
     return result
 
 
 def get_rotation_matrix(thetas):
     theta_x, theta_y, theta_z = thetas
-    cx, sx = np.cos(theta_x), np.sin(theta_x)
-    Rx = np.array([[1, 0, 0], [0, cx, sx], [0, -sx, cx]])
-    cy, sy = np.cos(theta_y), np.sin(theta_y)
-    Ry = np.array([[1, 0, 0], [0, cy, sy], [0, -sy, cy]])
-    cz, sz = np.cos(theta_z), np.sin(theta_z)
-    Rz = np.array([[1, 0, 0], [0, cz, sz], [0, -sz, cz]])
-    return Rx.dot(Ry.dot(Rz))
-
+    # N.B.:
+    # because Rx, Ry, Rz are all rotations in YZ plane, composition of these rotations
+    # is equivalent to one rotation through angle theta_x + theta_y + theta_z
+    th_xyz = theta_x + theta_y + theta_z
+    cxyz = np.cos(th_xyz)
+    sxyz = np.sin(th_xyz)
+    return np.array([[1, 0, 0], [0, cxyz, sxyz], [0, -sxyz, cxyz]])
 
 def get_edm(X):
     N = X.shape[0]
     rows, cols = np.indices((N, N))
-    edm = np.sum((X[rows, :] - X[cols, :])**2, axis=2)
+    buf_ = X[rows, :] - X[cols, :]
+    np.square(buf_, out=buf_)
+    edm = np.sum(buf_, axis=2)
     return edm
 
 
@@ -129,10 +148,15 @@ def projection(x, A, b):
     :rtype: (numpy.ndarray, float, float)
     """
     A_pseudoinv = pseudo_inverse(A)
-    x_hat = x - A_pseudoinv.dot(A.dot(x) - b)
+    # x_hat = x - A_pseudoinv.dot(A.dot(x) - b)
+    tmp_ = A.dot(x)
+    tmp_ -= b
+    x_hat = A_psedoinv.dot(tmp_)
+    np.subtract(x, x_hat, out=x_hat)
 
     cost = mse(x_hat, x)
-    constraints_error = mse(A.dot(x_hat), b)
+    A.dot(x_hat, out=tmp_)
+    constraints_error = mse(tmp_, b)
     return x_hat, cost, constraints_error
 
 
@@ -144,7 +168,7 @@ def vector_from_matrix(matrix):
 
 def matrix_from_vector(vector, N):
     triu_idx = np.triu_indices(n=N, m=N, k=1)
-    matrix = np.zeros((N, N))
+    matrix = np.zeros((N, N), dtype=vector.dtype)
     matrix[triu_idx[0], triu_idx[1]] = vector
     return matrix
 

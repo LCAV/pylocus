@@ -7,13 +7,16 @@ from pylocus.basics import eigendecomp
 
 
 def theta_from_eigendecomp(factor, u):
-    theta_hat = np.dot(np.diag(factor[:]), u.T)
-    theta_hat = theta_hat[0, :]
-    return np.real(theta_hat).reshape((-1,))
+#    theta_hat = np.dot(np.diag(factor[:]), u.T)
+#    theta_hat = theta_hat[0, :]
+#    return np.real(theta_hat).reshape((-1,))
+    theta_hat = f[0] * u[:, 0]
+    return theta_hat.reshape((-1,))
 
 
 def x_from_eigendecomp(factor, u, dim):
-    return np.dot(np.diag(factor[:]), u.T)[:dim, :]
+#    return np.dot(np.diag(factor[:]), u.T)[:dim, :]
+    return ((f * u).T)[:dim, :]
 
 
 def MDS(D, dim, method='simple', theta=False):
@@ -22,31 +25,27 @@ def MDS(D, dim, method='simple', theta=False):
     N = D.shape[0]
     if method == 'simple':
         d1 = D[0, :]
-        G = -0.5 * (D - d1 * np.ones([1, N]).T - (np.ones([N, 1]) * d1).T)
-        factor, u = eigendecomp(G, dim)
-        if (theta):
-            return theta_from_eigendecomp(factor, u)
-        else:
-            return x_from_eigendecomp(factor, u, dim)
-    if method == 'advanced':
-        s1T = np.vstack([np.ones([1, N]), np.zeros([N - 1, N])])
-        G = -0.5 * np.dot(np.dot((np.identity(N) - s1T.T), D),
-                          (np.identity(N) - s1T))
-        factor, u = eigendecomp(G, dim)
-        if (theta):
-            return theta_from_eigendecomp(factor, u)
-        else:
-            return x_from_eigendecomp(factor, u, dim)
-    if method == 'geometric':
-        J = np.identity(N) - 1.0 / float(N) * np.ones([N, N])
-        G = -0.5 * np.dot(np.dot(J, D), J)
-        factor, u = eigendecomp(G, dim)
-        if (theta):
-            return theta_from_eigendecomp(factor, u)
-        else:
-            return x_from_eigendecomp(factor, u, dim)
+        # buf_ = d1 * np.ones([1, N]).T + (np.ones([N, 1]) * d1).T
+        buf_ = np.broadcast_to(d1, D.shape) + np.broadcast_to(d1[:, np.newaxis], D.shape)
+        np.subtract(D, buf_, out=buf_)
+        G = buf_ # G = (D - d1 * np.ones([1, N]).T - (np.ones([N, 1]) * d1).T)
+    elif method == 'advanced':
+        # s1T = np.vstack([np.ones([1, N]), np.zeros([N - 1, N])])
+        s1T = np.zeros_like(D)
+        s1T[0, :] = 1
+        np.subtract(np.identity(N), s1T, out = s1T)
+        G = np.dot(np.dot(s1T.T, D), s1T)
+    elif method == 'geometric':
+        J = np.identity(N) + np.full((N, N), -1.0 / float(N))
+        G = np.dot(np.dot(J, D), J)
     else:
         print('Unknown method {} in MDS'.format(method))
+    G *= -0.5
+    factor, u = eigendecomp(G, dim)
+    if (theta):
+        return theta_from_eigendecomp(factor, u)
+    else:
+        return x_from_eigendecomp(factor, u, dim)
 
 
 def superMDS(X0, N, d, **kwargs):
@@ -149,11 +148,13 @@ def signedMDS(cdm, W=None):
 
     N = cdm.shape[0]
 
-    D_sym = (cdm - cdm.T) / 2
+    D_sym = (cdm - cdm.T)
+    D_sym /= 2
 
     if W is None:
         x_est = np.mean(D_sym, axis=1)
-        return x_est - np.min(x_est)
+        x_est -= np.min(x_est)
+        return x_est
 
     W_sub = W[1:, 1:]
     sum_W = np.sum(W[1:, :], axis=1)
@@ -164,8 +165,9 @@ def signedMDS(cdm, W=None):
 
     x_est = np.linalg.lstsq(A, d)[0]
     x_est = np.r_[[0], x_est]
+    x_est -= np.min(x_est)
 
-    return x_est - np.min(x_est), A, np.linalg.pinv(A)
+    return x_est, A, np.linalg.pinv(A)
 
 
 if __name__ == "__main__":
