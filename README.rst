@@ -1,5 +1,9 @@
 pylocus 
 =======
+
+.. image:: https://travis-ci.org/LCAV/pylocus.svg?branch=master
+    :target: https://travis-ci.org/LCAV/pylocus
+
 Python Localization Package
 ---------------------------
 
