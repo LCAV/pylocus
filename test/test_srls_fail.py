@@ -16,6 +16,7 @@ from pylocus.algorithms import reconstruct_srls
 from pylocus.basics import get_edm
 
 class TestSRLSFail(unittest.TestCase):
+    """ trying to reproduce a fail of SRLS. """ 
     def setUp(self):
         # from error logs: 
         self.real_points = np.array([[0.89, 2.87, 1.22], 

@@ -113,7 +113,7 @@ def relaxedEMDS(X0, N, d, C, b, KE, print_out=False, lamda=10):
     """ Find the set of points from an edge kernel with geometric constraints, using convex rank relaxation.
     """
     E = C.shape[1]
-    X = Semidef(E)
+    X = Variable((E, E), PSD=True)
 
     constraints = [C[i, :] * X == b[i] for i in range(C.shape[0])]
 
