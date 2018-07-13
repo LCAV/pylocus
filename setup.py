@@ -11,7 +11,7 @@ with open(path.join(here, 'README.rst'), encoding='utf-8') as f:
 setup(
     name='pylocus',
 
-    version='0.0.1',
+    version='0.0.2',
 
     description='Localization Package',
 

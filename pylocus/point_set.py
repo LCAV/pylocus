@@ -4,7 +4,7 @@ point-to-point distances and angles.
 """
 
 import numpy as np
-from .settings import *
+from pylocus.settings import *
 from math import pi
 
 
@@ -177,7 +177,7 @@ class PointSet:
         self.init()
 
     def create_edm(self):
-        from .basics import get_edm
+        from pylocus.basics import get_edm
         self.edm = get_edm(self.points)
 
     def plot_all(self, title='', size=[5, 2], filename='', axis='off'):
@@ -189,7 +189,7 @@ class PointSet:
         plot_points(self.points[range_, :], title, size)
 
     def create_abs_angles(self):
-        from .basics_angles import get_absolute_angle
+        from pylocus.basics_angles import get_absolute_angle
         abs_angles = np.empty((self.N, self.N))
         for i in range(self.N):
             for j in range(i, self.N):
@@ -261,7 +261,7 @@ class AngleSet(PointSet):
         Also returns the corners corresponding to each entry of theta.
         """
         import itertools
-        from .basics_angles import from_0_to_pi
+        from pylocus.basics_angles import from_0_to_pi
         theta = np.empty((self.M, ))
         corners = np.empty((self.M, 3))
         k = 0
@@ -287,7 +287,7 @@ class AngleSet(PointSet):
         return theta, corners
 
     def get_inner_angle(self, corner, other):
-        from .basics_angles import get_inner_angle
+        from pylocus.basics_angles import get_inner_angle
         return get_inner_angle(self.points[corner, :], (
             self.points[other[0], :], self.points[other[1], :]))
 
@@ -297,7 +297,7 @@ class AngleSet(PointSet):
         return self.theta[idx][0]
 
     def get_orientation(k, i, j):
-        from .basics_angles import from_0_to_2pi
+        from pylocus.basics_angles import from_0_to_2pi
         """calculate angles theta_ik and theta_jk theta produce point Pk.
         Should give the same as get_absolute_angle! """
         theta_ij = own.abs_angles[i, j]
@@ -382,7 +382,7 @@ class AngleSet(PointSet):
         return T
 
     def get_theta_tensor(self):
-        from pylocus.basics_angles import get_theta_tensor
+        from pylocuspylocus.basics_angles import get_theta_tensor
         self.theta_tensor = get_theta_tensor(self.theta, self.corners, self.N)
         return self.theta_tensor
 
@@ -686,21 +686,21 @@ class HeterogenousSet(PointSet):
 
 
 def dm_from_edm(edm):
-    from .basics import vector_from_matrix
+    from pylocus.basics import vector_from_matrix
     dm = vector_from_matrix(edm)
     dm = np.extract(dm > 0, dm)
     return np.power(dm, 0.5)
 
 
 def edm_from_dm(dm, N):
-    from .basics import matrix_from_vector
+    from pylocus.basics import matrix_from_vector
     edm_upper = matrix_from_vector(dm, N)
     edm = np.power(edm_upper + edm_upper.T, 2.0)
     return edm
 
 
 def sdm_from_dmi(dmi, N):
-    from .basics import matrix_from_vector
+    from pylocus.basics import matrix_from_vector
     sdm_upper = matrix_from_vector(dmi, N)
     sdm = sdm_upper - sdm_upper.T
     # assure diagonal is zero

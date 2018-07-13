@@ -3,7 +3,7 @@
 import numpy as np
 from cvxpy import *
 
-from .basics import eigendecomp
+from pylocus.basics import eigendecomp
 
 
 def theta_from_eigendecomp(factor, u):

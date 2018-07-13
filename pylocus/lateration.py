@@ -3,8 +3,9 @@
 
 import numpy as np
 from scipy.linalg import eigvals, eigvalsh
-from .basics import assert_print, assert_all_print
 from cvxpy import *
+
+from basics import assert_print, assert_all_print
 
 
 def get_lateration_parameters(real_points, indices, index, edm, W=None):

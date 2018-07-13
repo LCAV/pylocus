@@ -3,7 +3,7 @@
 import numpy as np
 from cvxpy import *
 
-from .basics import get_edm
+from pylocus.basics import get_edm
 
 
 def optspace(edm_missing, rank, niter=500, tol=1e-6, print_out=False):
@@ -45,7 +45,7 @@ def rank_alternation(edm_missing, rank, niter=50, print_out=False, edm_true=None
         The matrix is of the correct structure, but might not have the right measured entries.
 
     """
-    from .basics import low_rank_approximation
+    from pylocus.basics import low_rank_approximation
     errs = []
     N = edm_missing.shape[0]
     edm_complete = edm_missing.copy()
