@@ -2,6 +2,11 @@
 
 ## Unreleased 
 
+## [0.0.3] - 2018-07-16
+### Changed
+
+- Made SRLS algorithm work more robustly and efficiently, all tests passing. 
+
 ## [0.0.2] - 2018-07-12
 ### Changed
 
