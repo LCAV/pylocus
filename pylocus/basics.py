@@ -6,7 +6,7 @@ from math import pi, atan, atan2, sqrt, acos, cos, sin
 def mse(x, xhat):
     """ Calcualte mse between vector or matrix x and xhat """
     buf_ = x - xhat
-    np.square(buf_, out=buf_) # square in-place
+    np.square(buf_, out=buf_)  # square in-place
     sum_ = np.sum(buf_)
     sum_ /= x.size  # divide in-place
     return sum_
@@ -20,7 +20,7 @@ def rmse(x, xhat):
 
 def norm(x, xhat):
     buf_ = x - xhat
-    np.square(buf_, out=buf_) # square in-place
+    np.square(buf_, out=buf_)  # square in-place
     sum_ = np.sum(buf_)
     return sqrt(sum_)
 
@@ -105,10 +105,13 @@ def divide_where_nonzero(divide_this, by_this):
     if zero_mask.size:
         result[zero_mask] = 0.0
         nonzero_mask = mask                         # creates a view
-        np.logical_not(zero_mask, out=nonzero_mask) # overwrites memory of zero_mask
-        result[nonzero_mask] = divide_this[nonzero_mask] / by_this[nonzero_mask]
+        # overwrites memory of zero_mask
+        np.logical_not(zero_mask, out=nonzero_mask)
+        result[nonzero_mask] = divide_this[nonzero_mask] / \
+            by_this[nonzero_mask]
     else:
-        np.divide(divide_this, by_this, out=result) # more efficient, in-place operation
+        # more efficient, in-place operation
+        np.divide(divide_this, by_this, out=result)
     return result
 
 
@@ -121,6 +124,7 @@ def get_rotation_matrix(thetas):
     cxyz = np.cos(th_xyz)
     sxyz = np.sin(th_xyz)
     return np.array([[1, 0, 0], [0, cxyz, sxyz], [0, -sxyz, cxyz]])
+
 
 def get_edm(X):
     N = X.shape[0]
@@ -148,7 +152,6 @@ def projection(x, A, b):
     :rtype: (numpy.ndarray, float, float)
     """
     A_pseudoinv = pseudo_inverse(A)
-    # x_hat = x - A_pseudoinv.dot(A.dot(x) - b)
     tmp_ = A.dot(x)
     tmp_ -= b
     x_hat = A_pseudoinv.dot(tmp_)

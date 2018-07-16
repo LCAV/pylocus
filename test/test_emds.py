@@ -16,7 +16,7 @@ class TestEMDS(BaseCommon.TestAlgorithms):
         self.n_it = 5
         self.N_zero = [5]
         self.N_relaxed = [5]
-        self.eps = 1e-8
+        self.eps = 1e-7
         self.methods = ['relaxed','iterative']
 
     def create_points(self, N=5, d=3):
