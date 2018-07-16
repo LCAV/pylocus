@@ -43,7 +43,7 @@ class PointSet:
         self.points = return_noisy_points(noise, indices, self.points.copy())
         self.init()
 
-    def set_points(self, mode, points=None, range_=RANGE, size=1):
+    def set_points(self, mode='', points=None, range_=RANGE, size=1):
         """ Initialize points according to predefined modes.
 
         :param range_:[xmin, xmax, ymin, ymax], range of point sets
@@ -174,6 +174,13 @@ class PointSet:
                                         (3.34, -1.36), (5, 1.4)))
             else:
                 print("Error: No rule defined for N = ", self.N)
+        elif mode == '':
+            if points is None:
+                raise NotImplementedError("Need to give either mode or points.")
+            else:
+                self.points = points
+                self.N, self.d = points.shape
+
         self.init()
 
     def create_edm(self):
