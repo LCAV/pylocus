@@ -200,7 +200,11 @@ def reconstruct_srls(edm, real_points, W=None, print_out=False, n=1, rescale=Fal
         anchors, w, r2 = get_lateration_parameters(real_points, indices, index,
                                                    edm, W)
         if print_out:
-            print('SRLS parameters:', anchors, w, r2)
+            print('SRLS parameters:')
+            print('anchors', anchors)
+            print('w', w)
+            print('r2', r2)
+
         srls = SRLS(anchors, w, r2, rescale, z, print_out)
         if rescale:
             srls = srls[0]  # second element of output is the scale
