@@ -3,8 +3,9 @@
 
 import numpy as np
 from scipy.linalg import eigvals, eigvalsh
-from .basics import assert_print, assert_all_print
 from cvxpy import *
+
+from pylocus.basics import assert_print, assert_all_print
 
 
 def get_lateration_parameters(real_points, indices, index, edm, W=None):
@@ -73,7 +74,8 @@ def SRLS(anchors, w, r2, rescale=False, z=None, print_out=False):
 
     def phi(_lambda):
         yhat = y_hat(_lambda).reshape((-1, 1))
-        return np.dot(yhat.T, np.dot(D, yhat)) + 2 * np.dot(f.T, yhat)
+        sol = np.dot(yhat.T, np.dot(D, yhat)) + 2 * np.dot(f.T, yhat)
+        return sol.flatten()
 
     def phi_prime(_lambda):
         # TODO: test this.
@@ -93,7 +95,7 @@ def SRLS(anchors, w, r2, rescale=False, z=None, print_out=False):
         assert d == 3, 'Dimension of problem has to be 3 for fixing z.'
 
     if rescale and z is not None:
-        raise NotImplementedError('Canoot run rescale for fixed z.')
+        raise NotImplementedError('Cannot run rescale for fixed z.')
     if rescale and n < d + 2:
         raise ValueError(
             'A minimum of d + 2 ranges are necessary for rescaled ranging.')
@@ -150,32 +152,41 @@ def SRLS(anchors, w, r2, rescale=False, z=None, print_out=False):
         print('eigvals:', eigvals(ATA))
         print('condition number:', np.linalg.cond(ATA))
         print('generalized eigenvalues:', eig)
-    eps = 0.01
+
+    #eps = 0.01
     if eig[-1] > 1e-10:
-        I_orig = -1.0 / eig[-1] + eps
+        lower_bound = - 1.0 / eig[-1] 
     else:
         print('Warning: biggest eigenvalue is zero!')
-        I_orig = -1e-5
+        lower_bound = -1e-5
+
     inf = 1e5
     xtol = 1e-12
-    try:
-        lambda_opt = optimize.bisect(phi, I_orig, inf, xtol=xtol)
-    except:
-        print('Bisect failed. Trying Newton...')
-        lambda_opt = I_orig
-        try:
-            lambda_opt = optimize.newton(
-                phi, I_orig, fprime=phi_prime, maxiter=1000, tol=xtol)
-            assert phi(lambda_opt) < xtol, 'did not find solution of phi(lambda)=0:={}'.format(
-                phi(lambda_opt))
+
+    lambda_opt = 0
+    # We will look for the zero of phi between lower_bound and inf. 
+    # Therefore, the two have to be of different signs. 
+    if (phi(lower_bound) > 0) and (phi(inf) < 0): 
+        print('lower bound:', lower_bound)
+        # brentq is considered the best rootfinding routine. 
+        try: 
+            lambda_opt = optimize.brentq(phi, lower_bound, inf, xtol=xtol)
         except:
-            print('SRLS ERROR: Did not converge. Setting lambda to 0.')
-            lambda_opt = 0
+            print('SRLS error: brentq did not converge even though we found an estimate for lower and upper bonud. Setting lambda to 0.')
+    else: 
+        try: 
+            lambda_opt = optimize.newton(phi, lower_bound, fprime=phi_prime, maxiter=1000, tol=xtol, verbose=True)
+            assert phi(lambda_opt) < xtol, 'did not find solution of phi(lambda)=0:={}'.format(phi(lambda_opt))
+        except:
+            print('SRLS error: newton did not converge. Setting lambda to 0.')
 
     if (print_out):
-        print('phi(I_orig)', phi(I_orig))
+        print('phi(lower_bound)', phi(lower_bound))
         print('phi(inf)', phi(inf))
-        print('phi(opt)', phi(lambda_opt))
+        print('phi(lambda_opt)', phi(lambda_opt))
+        pos_definite = ATA + lambda_opt*D
+        eig = np.sort(np.real(eigvals(pos_definite)))
+        print('should be strictly bigger than 0:', eig)
 
     # Compute best estimate
     yhat = y_hat(lambda_opt)
