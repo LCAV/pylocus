@@ -2,24 +2,35 @@
 # module ALGORITHMS
 import numpy as np
 
+IMPLEMENTED_METHODS = ['MDS',
+                       'MDSoptspace',
+                       'MDSalternate',
+                       'SDR',
+                       'ACD',
+                       'dwMDS',
+                       'SRLS']
 
-def execute_method(method, noisy_edm=None, real_points=None, W=None, **kwargs):
+
+def execute_method(method, noisy_edm=None, all_points=None, W=None, **kwargs):
+    if method not in IMPLEMENTED_METHODS:
+        raise NotImplementedError(
+            'method {} is not implemented.'.format(method))
     if method == 'MDS':
         xhat = reconstruct_mds(
-            noisy_edm, real_points=real_points, method='geometric')
+            noisy_edm, all_points=all_points, method='geometric')
     if method == 'MDSoptspace':
-        xhat = reconstruct_mds(noisy_edm, real_points=real_points,
+        xhat = reconstruct_mds(noisy_edm, all_points=all_points,
                                method='geometric', mask=W,
                                completion='optspace', print_out=False)
     if method == 'MDSalternate':
-        xhat = reconstruct_mds(noisy_edm, real_points=real_points,
+        xhat = reconstruct_mds(noisy_edm, all_points=all_points,
                                method='geometric', mask=W,
                                completion='alternate', print_out=False)
     if method == 'SDR':
         x_SDRold, EDMbest = reconstruct_sdp(
-            noisy_edm, W=W, real_points=real_points)
+            noisy_edm, W=W, all_points=all_points)
         # Added to avoid strange "too large to be a matrix" error
-        N, d = real_points.shape
+        N, d = all_points.shape
         xhat = np.zeros((N, d))
         xhat[:, :] = x_SDRold
     if method == 'ACD':
@@ -29,9 +40,9 @@ def execute_method(method, noisy_edm=None, real_points=None, W=None, **kwargs):
         X0 = kwargs.pop('X0', None)
         xhat, costs = reconstruct_dwmds(noisy_edm, W=W, X0=X0, **kwargs)
     if method == 'SRLS':
-        n = kwargs.get('n', None)
+        n = kwargs.get('n', 1)
         rescale = kwargs.get('rescale', False)
-        xhat = reconstruct_srls(noisy_edm, real_points,
+        xhat = reconstruct_srls(noisy_edm, all_points,
                                 n=n, W=W, rescale=rescale)
     return xhat
 
@@ -95,16 +106,16 @@ def procrustes(anchors, X, scale=True, print_out=False):
     return X_transformed, R, t, c
 
 
-def reconstruct_emds(edm, Om, real_points, method=None, **kwargs):
+def reconstruct_emds(edm, Om, all_points, method=None, **kwargs):
     """ Reconstruct point set using E(dge)-MDS.
     """
     from .point_set import dm_from_edm
-    N = real_points.shape[0]
-    d = real_points.shape[1]
+    N = all_points.shape[0]
+    d = all_points.shape[1]
     dm = dm_from_edm(edm)
     if method is None:
         from .mds import superMDS
-        Xhat, __ = superMDS(real_points[0, :], N, d, Om=Om, dm=dm)
+        Xhat, __ = superMDS(all_points[0, :], N, d, Om=Om, dm=dm)
     else:
         C = kwargs.get('C', None)
         b = kwargs.get('b', None)
@@ -115,24 +126,24 @@ def reconstruct_emds(edm, Om, real_points, method=None, **kwargs):
         if method == 'iterative':
             from .mds import iterativeEMDS
             Xhat, __ = iterativeEMDS(
-                real_points[0, :], N, d, KE=KE_noisy, C=C, b=b)
+                all_points[0, :], N, d, KE=KE_noisy, C=C, b=b)
         elif method == 'relaxed':
             from .mds import relaxedEMDS
             Xhat, __ = relaxedEMDS(
-                real_points[0, :], N, d, KE=KE_noisy, C=C, b=b)
+                all_points[0, :], N, d, KE=KE_noisy, C=C, b=b)
         else:
             raise NameError('Undefined method', method)
-    Y, R, t, c = procrustes(real_points, Xhat, scale=False)
+    Y, R, t, c = procrustes(all_points, Xhat, scale=False)
     return Y
 
 
-def reconstruct_cdm(dm, absolute_angles, real_points, W=None):
+def reconstruct_cdm(dm, absolute_angles, all_points, W=None):
     """ Reconstruct point set from angle and distance measurements, using coordinate difference matrices.
     """
     from pylocus.point_set import dmi_from_V, sdm_from_dmi, get_V
     from pylocus.mds import signedMDS
 
-    N = real_points.shape[0]
+    N = all_points.shape[0]
 
     V = get_V(absolute_angles, dm)
 
@@ -146,17 +157,17 @@ def reconstruct_cdm(dm, absolute_angles, real_points, W=None):
     points_y = signedMDS(sdmy, W)
 
     Xhat = np.c_[points_x, points_y]
-    Y, R, t, c = procrustes(real_points, Xhat, scale=False)
+    Y, R, t, c = procrustes(all_points, Xhat, scale=False)
     return Y
 
 
-def reconstruct_mds(edm, real_points, completion='optspace', mask=None, method='geometric', print_out=False, n=1):
+def reconstruct_mds(edm, all_points, completion='optspace', mask=None, method='geometric', print_out=False, n=1):
     """ Reconstruct point set using MDS and matrix completion algorithms.
     """
     from .point_set import dm_from_edm
     from .mds import MDS
-    N = real_points.shape[0]
-    d = real_points.shape[1]
+    N = all_points.shape[0]
+    d = all_points.shape[1]
     if mask is not None:
         edm_missing = np.multiply(edm, mask)
         if completion == 'optspace':
@@ -174,30 +185,30 @@ def reconstruct_mds(edm, real_points, completion='optspace', mask=None, method='
             print('{}: relative error:{}'.format(completion, err))
         edm = edm_complete
     Xhat = MDS(edm, d, method, False).T
-    Y, R, t, c = procrustes(real_points[n:], Xhat, True)
-    #Y, R, t, c = procrustes(real_points, Xhat, True)
+    Y, R, t, c = procrustes(all_points[n:], Xhat, True)
+    #Y, R, t, c = procrustes(all_points, Xhat, True)
     return Y
 
 
-def reconstruct_sdp(edm, real_points, W=None, print_out=False, lamda=1000, **kwargs):
+def reconstruct_sdp(edm, all_points, W=None, print_out=False, lamda=1000, **kwargs):
     """ Reconstruct point set using semi-definite rank relaxation.
     """
     from .edm_completion import semidefinite_relaxation
     edm_complete = semidefinite_relaxation(
         edm, lamda=lamda, W=W, print_out=print_out, **kwargs)
-    Xhat = reconstruct_mds(edm_complete, real_points, method='geometric')
+    Xhat = reconstruct_mds(edm_complete, all_points, method='geometric')
     return Xhat, edm_complete
 
 
-def reconstruct_srls(edm, real_points, W=None, print_out=False, n=1, rescale=False,
+def reconstruct_srls(edm, all_points, W=None, print_out=False, n=1, rescale=False,
                      z=None):
     """ Reconstruct point set using S(quared)R(ange)L(east)S(quares) method.
     """
     from .lateration import SRLS, get_lateration_parameters
-    Y = real_points.copy()
+    Y = all_points.copy()
     indices = range(n)
     for index in indices:
-        anchors, w, r2 = get_lateration_parameters(real_points, indices, index,
+        anchors, w, r2 = get_lateration_parameters(all_points, indices, index,
                                                    edm, W)
         if print_out:
             print('SRLS parameters:')
