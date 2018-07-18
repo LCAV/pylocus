@@ -11,38 +11,38 @@ IMPLEMENTED_METHODS = ['MDS',
                        'SRLS']
 
 
-def execute_method(method, noisy_edm=None, all_points=None, W=None, **kwargs):
+def execute_method(method, measured_matrix=None, all_points=None, W=None, **kwargs):
     if method not in IMPLEMENTED_METHODS:
         raise NotImplementedError(
             'method {} is not implemented.'.format(method))
     if method == 'MDS':
         xhat = reconstruct_mds(
-            noisy_edm, all_points=all_points, method='geometric')
+            measured_matrix, all_points=all_points, method='geometric')
     if method == 'MDSoptspace':
-        xhat = reconstruct_mds(noisy_edm, all_points=all_points,
+        xhat = reconstruct_mds(measured_matrix, all_points=all_points,
                                method='geometric', mask=W,
                                completion='optspace', print_out=False)
     if method == 'MDSalternate':
-        xhat = reconstruct_mds(noisy_edm, all_points=all_points,
+        xhat = reconstruct_mds(measured_matrix, all_points=all_points,
                                method='geometric', mask=W,
                                completion='alternate', print_out=False)
     if method == 'SDR':
         x_SDRold, EDMbest = reconstruct_sdp(
-            noisy_edm, W=W, all_points=all_points)
+            measured_matrix, W=W, all_points=all_points)
         # Added to avoid strange "too large to be a matrix" error
         N, d = all_points.shape
         xhat = np.zeros((N, d))
         xhat[:, :] = x_SDRold
     if method == 'ACD':
         X0 = kwargs.get('X0', None)
-        xhat, costs = reconstruct_acd(noisy_edm, W=W, X0=X0)
+        xhat, costs = reconstruct_acd(measured_matrix, W=W, X0=X0)
     if method == 'dwMDS':
         X0 = kwargs.pop('X0', None)
-        xhat, costs = reconstruct_dwmds(noisy_edm, W=W, X0=X0, **kwargs)
+        xhat, costs = reconstruct_dwmds(measured_matrix, W=W, X0=X0, **kwargs)
     if method == 'SRLS':
         n = kwargs.get('n', 1)
         rescale = kwargs.get('rescale', False)
-        xhat = reconstruct_srls(noisy_edm, all_points,
+        xhat = reconstruct_srls(measured_matrix, all_points,
                                 n=n, W=W, rescale=rescale)
     return xhat
 
