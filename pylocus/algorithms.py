@@ -27,17 +27,22 @@ def execute_method(method, measured_matrix=None, all_points=None, W=None, **kwar
                                method='geometric', mask=W,
                                completion='alternate', print_out=False)
     if method == 'SDR':
-        x_SDRold, EDMbest = reconstruct_sdp(
+        x_SDRold, __ = reconstruct_sdp(
             measured_matrix, W=W, all_points=all_points)
+        # TODO
         # Added to avoid strange "too large to be a matrix" error
         N, d = all_points.shape
         xhat = np.zeros((N, d))
         xhat[:, :] = x_SDRold
     if method == 'ACD':
         X0 = kwargs.get('X0', None)
+        if X0 is None:
+            raise NameError('Need to provide X0 for method ACD.')
         xhat, costs = reconstruct_acd(measured_matrix, W=W, X0=X0)
     if method == 'dwMDS':
         X0 = kwargs.pop('X0', None)
+        if X0 is None:
+            raise NameError('Need to provide X0 for method dwMDS.')
         xhat, costs = reconstruct_dwmds(measured_matrix, W=W, X0=X0, **kwargs)
     if method == 'SRLS':
         n = kwargs.get('n', 1)
@@ -227,6 +232,9 @@ def reconstruct_acd(edm, X0, W=None, print_out=False, tol=1e-10, sweeps=10):
     """ Reconstruct point set using alternating coordinate descent.
 
     :param X0: Nxd matrix of starting points.
+    :param tol: Stopping criterion: if the stepsize in all coordinate directions 
+                is less than tol for 2 consecutive sweeps, we stop. 
+    :param sweep: Maximum number of sweeps. One sweep goes through all coordintaes and points once. 
     """
 
     def get_unique_delta(delta, i, coord, print_out=False):
@@ -317,8 +325,13 @@ def reconstruct_acd(edm, X0, W=None, print_out=False, tol=1e-10, sweeps=10):
 def reconstruct_dwmds(edm, X0, W=None, n=None, r=None, X_bar=None, print_out=False, tol=1e-10, sweeps=100):
     """ Reconstruct point set using d(istributed)w(eighted) MDS.
 
+    Refer to paper "Distributed Weighted-Multidimensional Scaling for Node Localization in Sensor Networks" for 
+    implementation details (doi.org/10.1145/1138127.1138129)
+
     :param X0: Nxd matrix of starting points.
     :param n: Number of points of unknown position. The first n points in X0 and edm are considered unknown. 
+    :param tol: Stopping criterion: when the cost is below this level, we stop. 
+    :param sweeps: Maximum number of sweeps. 
     """
     from .basics import get_edm
     from .distributed_mds import get_b, get_Si
