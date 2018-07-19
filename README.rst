@@ -25,6 +25,13 @@ To perform a local install on your computer, run from this folder level (where s
   pip install -e . 
   
 This installs the package using symbolic links, avoiding the need for a reinstall whenever the source code is changed.
+If you use conda, then 
+
+.. code-block:: bash
+
+  conda develop . 
+
+does the same trick. 
 
 Install
 *******
@@ -49,21 +56,4 @@ Depending on which parts of the project you are using, you might need to install
 Documentation
 *************
 
-You can import the package and its submodules as usual, for example:
-
-.. code-block:: python
-
-  from pylocus import algorithms
-
-  Xhat = algorithms.reconstruct_mds(...)
-
-or
-
-.. code-block:: python
-
-  from pylocus.algorithms import *
-
-  Xhat = reconstruct_mds(...)
-
-
-Documentation of all available functionalities can be found on ReadTheDocs: http://pylocus.readthedocs.org/en/latest/
+Documentation can be found on ReadTheDocs: http://pylocus.readthedocs.org/en/latest/
