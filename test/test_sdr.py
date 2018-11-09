@@ -26,7 +26,7 @@ class TestSDP(BaseCommon.TestAlgorithms):
 
     def call_method(self, method=''):
         print('TestSDP:call_method')
-        Xhat, edm = reconstruct_sdp(self.pts.edm, real_points=self.pts.points,
+        Xhat, edm = reconstruct_sdp(self.pts.edm, all_points=self.pts.points,
                                     solver='CVXOPT', method='maximize')
         return Xhat
 
@@ -43,7 +43,7 @@ class TestSDP(BaseCommon.TestAlgorithms):
             print('testing options', options, eps)
             self.eps = eps
             points_estimate, __ = reconstruct_sdp(
-                self.pts.edm, real_points=self.pts.points, method='maximize', **options)
+                self.pts.edm, all_points=self.pts.points, method='maximize', **options)
             error = np.linalg.norm(self.pts.points - points_estimate)
             self.assertTrue(error < self.eps, 'with options {} \nerror: {} not smaller than {}'.format(
                 options, error, self.eps))
