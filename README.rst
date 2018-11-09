@@ -56,4 +56,6 @@ Depending on which parts of the project you are using, you might need to install
 Documentation
 *************
 
-Documentation can be found on ReadTheDocs: http://pylocus.readthedocs.org/en/latest/
+See the tutorials folder for some exmaple scripts on how to use this package. More scripts will be added soon. 
+
+This is a constantly growing package and documentation is work-in-progress. The current version can be found on ReadTheDocs: http://pylocus.readthedocs.org/en/latest/
