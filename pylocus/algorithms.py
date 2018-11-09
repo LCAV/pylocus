@@ -46,7 +46,7 @@ def execute_method(method, measured_matrix=None, all_points=None, W=None, **kwar
         xhat, costs = reconstruct_dwmds(measured_matrix, W=W, X0=X0, **kwargs)
     if method == 'SRLS':
         n = kwargs.get('n', 1)
-	z = kwargs.get('z', None)
+        z = kwargs.get('z', None)
         rescale = kwargs.get('rescale', False)
         xhat = reconstruct_srls(measured_matrix, all_points,
                                 n=n, W=W, rescale=rescale, z=z)
