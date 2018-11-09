@@ -164,7 +164,6 @@ def SRLS(anchors, w, r2, rescale=False, z=None, print_out=False):
     # We will look for the zero of phi between lower_bound and inf. 
     # Therefore, the two have to be of different signs. 
     if (phi(lower_bound) > 0) and (phi(inf) < 0): 
-        print('lower bound:', lower_bound)
         # brentq is considered the best rootfinding routine. 
         try: 
             lambda_opt = optimize.brentq(phi, lower_bound, inf, xtol=xtol)
