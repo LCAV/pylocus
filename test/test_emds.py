@@ -29,10 +29,10 @@ class TestEMDS(BaseCommon.TestAlgorithms):
         print('TestEMDS:call_method with', method)
         if method == '':
             return reconstruct_emds(self.pts.edm, Om=self.pts.Om,
-                                real_points=self.pts.points)
+                                    all_points=self.pts.points)
         else:
             return reconstruct_emds(self.pts.edm, Om=self.pts.Om,
-                                real_points=self.pts.points, C=self.C, b=self.b, method=method)
+                                    all_points=self.pts.points, C=self.C, b=self.b, method=method)
 
 
 if __name__ == "__main__":

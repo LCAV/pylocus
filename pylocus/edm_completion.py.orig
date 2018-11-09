@@ -111,8 +111,12 @@ def semidefinite_relaxation(edm_missing, lamda, W=None, print_out=False, **kwarg
 
     if method == 'maximize':
         obj = Maximize(trace(H) - lamda *
+<<<<<<< HEAD
                        norm(multiply(W, (edm_optimize - edm_missing)), p=1))
+=======
+                       norm(multiply(W, (edm_optimize - edm_missing))))
     # TODO: add a reference to paper where "minimize" is used instead of maximize. 
+>>>>>>> 5790607c7fc2d3683148ed8d79d54e3b658262c0
     elif method == 'minimize':
         obj = Minimize(trace(H) + lamda *
                        norm(multiply(W, (edm_optimize - edm_missing)), p=1))

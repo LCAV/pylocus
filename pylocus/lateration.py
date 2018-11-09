@@ -8,14 +8,14 @@ from cvxpy import *
 from pylocus.basics import assert_print, assert_all_print
 
 
-def get_lateration_parameters(real_points, indices, index, edm, W=None):
-    """ Get parameters relevant for lateration from full real_points, edm and W.
+def get_lateration_parameters(all_points, indices, index, edm, W=None):
+    """ Get parameters relevant for lateration from full all_points, edm and W.
     """
     if W is None:
         W = np.ones(edm.shape)
 
     # delete points that are not considered anchors
-    anchors = np.delete(real_points, indices, axis=0)
+    anchors = np.delete(all_points, indices, axis=0)
     r2 = np.delete(edm[index, :], indices)
     w = np.delete(W[index, :], indices)
 
@@ -167,7 +167,6 @@ def SRLS(anchors, w, r2, rescale=False, z=None, print_out=False):
     # We will look for the zero of phi between lower_bound and inf. 
     # Therefore, the two have to be of different signs. 
     if (phi(lower_bound) > 0) and (phi(inf) < 0): 
-        print('lower bound:', lower_bound)
         # brentq is considered the best rootfinding routine. 
         try: 
             lambda_opt = optimize.brentq(phi, lower_bound, inf, xtol=xtol)

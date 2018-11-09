@@ -2,6 +2,10 @@
 # module ALGORITHMS
 import numpy as np
 
+<<<<<<< HEAD
+
+def execute_method(method, noisy_edm=None, real_points=None, W=None, z=None, **kwargs):
+=======
 IMPLEMENTED_METHODS = ['MDS',
                        'MDSoptspace',
                        'MDSalternate',
@@ -15,6 +19,7 @@ def execute_method(method, measured_matrix=None, all_points=None, W=None, **kwar
     if method not in IMPLEMENTED_METHODS:
         raise NotImplementedError(
             'method {} is not implemented.'.format(method))
+>>>>>>> 5790607c7fc2d3683148ed8d79d54e3b658262c0
     if method == 'MDS':
         xhat = reconstruct_mds(
             measured_matrix, all_points=all_points, method='geometric')
@@ -46,10 +51,14 @@ def execute_method(method, measured_matrix=None, all_points=None, W=None, **kwar
         xhat, costs = reconstruct_dwmds(measured_matrix, W=W, X0=X0, **kwargs)
     if method == 'SRLS':
         n = kwargs.get('n', 1)
-	z = kwargs.get('z', None)
         rescale = kwargs.get('rescale', False)
-        xhat = reconstruct_srls(measured_matrix, all_points,
+<<<<<<< HEAD
+        xhat = reconstruct_srls(noisy_edm, real_points,
                                 n=n, W=W, rescale=rescale, z=z)
+=======
+        xhat = reconstruct_srls(measured_matrix, all_points,
+                                n=n, W=W, rescale=rescale)
+>>>>>>> 5790607c7fc2d3683148ed8d79d54e3b658262c0
     return xhat
 
 
