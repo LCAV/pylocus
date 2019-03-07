@@ -3,7 +3,12 @@
 
 import numpy as np
 from scipy.linalg import eigvals, eigvalsh
-from cvxpy import *
+
+try:
+    from cvxpy import *
+except:
+    print("WARNING from pylocs.lateration module: Failed to load cvxpy. This might lead to errors later on.")
+
 
 from pylocus.basics import assert_print, assert_all_print
 
@@ -96,13 +101,14 @@ def SRLS(anchors, w, r2, rescale=False, z=None, print_out=False):
 
     if rescale and z is not None:
         raise NotImplementedError('Cannot run rescale for fixed z.')
+
     if rescale and n < d + 2:
         raise ValueError(
             'A minimum of d + 2 ranges are necessary for rescaled ranging.')
-    elif n < d + 1 and z is None:
+    elif z is None and n < d + 1:
         raise ValueError(
             'A minimum of d + 1 ranges are necessary for ranging.')
-    elif n < d:
+    elif z is not None and n < d:
         raise ValueError(
             'A minimum of d ranges are necessary for ranging.')
 
@@ -166,18 +172,22 @@ def SRLS(anchors, w, r2, rescale=False, z=None, print_out=False):
     lambda_opt = 0
     # We will look for the zero of phi between lower_bound and inf. 
     # Therefore, the two have to be of different signs. 
-    if (phi(lower_bound) > 0) and (phi(inf) < 0): 
-        # brentq is considered the best rootfinding routine. 
+    if (phi(lower_bound) >= 0) and (phi(inf) < 0): 
         try: 
-            lambda_opt = optimize.brentq(phi, lower_bound, inf, xtol=xtol)
+            # brentq is considered the best rootfinding routine. 
+            lambda_opt, r = optimize.brentq(phi, lower_bound, inf, xtol=xtol, full_output=True)
+            assert r.converged
         except:
             print('SRLS error: brentq did not converge even though we found an estimate for lower and upper bonud. Setting lambda to 0.')
     else: 
         try: 
-            lambda_opt = optimize.newton(phi, lower_bound, fprime=phi_prime, maxiter=1000, tol=xtol, verbose=True)
+            lambda_opt, r = optimize.newton(phi, lower_bound, fprime=phi_prime, maxiter=10000, 
+                                            tol=xtol, verbose=True)
             assert phi(lambda_opt) < xtol, 'did not find solution of phi(lambda)=0:={}'.format(phi(lambda_opt))
         except:
+            print(phi(lambda_opt)-xtol)
             print('SRLS error: newton did not converge. Setting lambda to 0.')
+            print('searched between', phi(lower_bound), phi(inf))
 
     if (print_out):
         print('phi(lower_bound)', phi(lower_bound))
