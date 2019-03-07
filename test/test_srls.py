@@ -3,7 +3,10 @@
 
 import unittest
 import numpy as np
-from .test_common import BaseCommon
+import sys
+sys.path.append('./test/')
+
+from test_common import BaseCommon
 
 from pylocus.point_set import PointSet, create_from_points
 from pylocus.simulation import create_noisy_edm
