@@ -58,6 +58,26 @@ def classical_mds(D):
     return MDS(D, 1, 'geometric')
 
 
+def complete_points(all_points, N):
+    ''' add zero-rows to top of all_points to reach total of N. 
+    :param all_points: m x d array, where m <= N 
+    :param N: final dimension of all_points.
+
+    :return: number of added lines (n), new array all_points of size Nxd
+    
+    '''
+    m = all_points.shape[0]
+    d = all_points.shape[1]
+    n = 1 # number of points to localize
+    if m < N:
+        n = N-m
+        all_points = np.r_[np.zeros((n, d)), all_points]
+        assert all_points.shape == (N, d)
+    elif m > N:
+        raise ValueError("Cannot have more anchor points than edm entries.")
+    return n, all_points
+
+
 def procrustes(anchors, X, scale=True, print_out=False):
     """ Fit X to anchors by applying optimal translation, rotation and reflection.
 
@@ -65,7 +85,7 @@ def procrustes(anchors, X, scale=True, print_out=False):
     of coordinates X (output of EDM algorithm) optimally matching anchors in least squares sense.
 
     :param anchors: Matrix of shape m x d, where m is number of anchors, d is dimension of setup.
-    :param X: Matrix of shape N x d, where the last m points will be used to find fit with the anchors. 
+    :param X: Matrix of shape N x d, of which the last m rows will be used to find fit with the anchors. 
     :param scale: set to True if the point set should be scaled to match the anchors.
     
     :return: the transformed vector X, the rotation matrix, translation vector, and scaling factor.
@@ -86,10 +106,11 @@ def procrustes(anchors, X, scale=True, print_out=False):
     sigmaxy = 1 / m * np.dot((anchors - muy).T, X_m - mux)
     try:
         U, D, VT = np.linalg.svd(sigmaxy)
-    except np.LinAlgError:
+    except:
         print('strange things are happening...')
         print(sigmaxy)
         print(np.linalg.matrix_rank(sigmaxy))
+        raise
     #this doesn't work and doesn't seem to be necessary! (why?)
     #  S = np.eye(D.shape[0])
     #  if (np.linalg.det(U)*np.linalg.det(VT.T) < 0):
@@ -167,13 +188,24 @@ def reconstruct_cdm(dm, absolute_angles, all_points, W=None):
     return Y
 
 
-def reconstruct_mds(edm, all_points, completion='optspace', mask=None, method='geometric', print_out=False, n=1):
+def reconstruct_mds(edm, all_points, completion='optspace', mask=None, method='geometric', print_out=False):
     """ Reconstruct point set using MDS and matrix completion algorithms.
+
+    :param edm: Euclidean distance matrix, NxN. 
+    :param all_points: Mxd vector of anchor coordinates. if M < N, M-N 0-row-vectors will be added to the beginning of the array. If M=N and n is not specified, we assume that the first row corresponds to the point to be localized. 
+    :param completion: can be 'optspace' or 'alternate'. Algorithm to use for matrix completion. See pylocus.edm_completion for details.
+    :param mask: Optional mask of missing entries.  
+    :param method: method to be used for MDS algorithm. See method "MDS" from pylocus.mds module for details. 
+
     """
+
     from .point_set import dm_from_edm
     from .mds import MDS
-    N = all_points.shape[0]
     d = all_points.shape[1]
+    N = edm.shape[0]
+
+    n, all_points = complete_points(all_points, N)
+
     if mask is not None:
         edm_missing = np.multiply(edm, mask)
         if completion == 'optspace':
@@ -191,8 +223,8 @@ def reconstruct_mds(edm, all_points, completion='optspace', mask=None, method='g
             print('{}: relative error:{}'.format(completion, err))
         edm = edm_complete
     Xhat = MDS(edm, d, method, False).T
+    assert (~np.isnan(Xhat)).all()
     Y, R, t, c = procrustes(all_points[n:], Xhat, True)
-    #Y, R, t, c = procrustes(all_points, Xhat, True)
     return Y
 
 
@@ -206,11 +238,20 @@ def reconstruct_sdp(edm, all_points, W=None, print_out=False, lamda=1000, **kwar
     return Xhat, edm_complete
 
 
-def reconstruct_srls(edm, all_points, W=None, print_out=False, n=1, rescale=False,
+def reconstruct_srls(edm, all_points, W=None, print_out=False, rescale=False,
                      z=None):
     """ Reconstruct point set using S(quared)R(ange)L(east)S(quares) method.
+
+    See reconstruct_mds for edm and all_points parameters.
+
+    :param W: optional weights matrix, same dimension as edm. 
+    :param rescale, z: optional parameters for SRLS. See SRLS documentation for explanation (module pylocus.lateration)
     """
     from .lateration import SRLS, get_lateration_parameters
+
+    N = edm.shape[0]
+    n, all_points = complete_points(all_points, N)
+
     Y = all_points.copy()
     indices = range(n)
     for index in indices:
@@ -222,7 +263,13 @@ def reconstruct_srls(edm, all_points, W=None, print_out=False, n=1, rescale=Fals
             print('w', w)
             print('r2', r2)
 
-        srls = SRLS(anchors, w, r2, rescale, z, print_out)
+        try:
+            srls = SRLS(anchors, w, r2, rescale, z, print_out)
+        except Exception as e:
+            print(e)
+            print("something went wrong; probably bad geometry. (All anchors in the same plane, two distances are exactly the same, etc.)")
+            return None
+
         if rescale:
             srls = srls[0]  # second element of output is the scale
         Y[index, :] = srls
