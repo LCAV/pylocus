@@ -267,7 +267,8 @@ def reconstruct_srls(edm, all_points, W=None, print_out=False, rescale=False,
             srls = SRLS(anchors, w, r2, rescale, z, print_out)
         except Exception as e:
             print(e)
-            print("something went wrong; probably bad geometry. (All anchors in the same plane, two distances are exactly the same, etc.)")
+            print("Something went wrong; probably bad geometry. (All anchors in the same plane, two distances are exactly the same, etc.)")
+            raise e
             return None
 
         if rescale:

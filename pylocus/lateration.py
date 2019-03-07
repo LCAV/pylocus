@@ -160,11 +160,11 @@ def SRLS(anchors, w, r2, rescale=False, z=None, print_out=False):
         print('generalized eigenvalues:', eig)
 
     #eps = 0.01
-    if eig[-1] > 1e-10:
-        lower_bound = - 1.0 / eig[-1] 
+    if np.abs(eig[-1]) < 1e-10:
+        print('Warning: biggest eigenvalue is almost zero!')
+        lower_bound = -1e3
     else:
-        print('Warning: biggest eigenvalue is zero!')
-        lower_bound = -1e-5
+        lower_bound = - 1.0 / eig[-1] 
 
     inf = 1e5
     xtol = 1e-12
@@ -172,7 +172,7 @@ def SRLS(anchors, w, r2, rescale=False, z=None, print_out=False):
     lambda_opt = 0
     # We will look for the zero of phi between lower_bound and inf. 
     # Therefore, the two have to be of different signs. 
-    if (phi(lower_bound) >= 0) and (phi(inf) < 0): 
+    if (phi(lower_bound) > 0) and (phi(inf) < 0): 
         try: 
             # brentq is considered the best rootfinding routine. 
             lambda_opt, r = optimize.brentq(phi, lower_bound, inf, xtol=xtol, full_output=True)
@@ -181,13 +181,11 @@ def SRLS(anchors, w, r2, rescale=False, z=None, print_out=False):
             print('SRLS error: brentq did not converge even though we found an estimate for lower and upper bonud. Setting lambda to 0.')
     else: 
         try: 
-            lambda_opt, r = optimize.newton(phi, lower_bound, fprime=phi_prime, maxiter=10000, 
-                                            tol=xtol, verbose=True)
+            lambda_opt = optimize.newton(phi, lower_bound, maxiter=10000, tol=xtol)
             assert phi(lambda_opt) < xtol, 'did not find solution of phi(lambda)=0:={}'.format(phi(lambda_opt))
-        except:
-            print(phi(lambda_opt)-xtol)
+        except Exception as e:
             print('SRLS error: newton did not converge. Setting lambda to 0.')
-            print('searched between', phi(lower_bound), phi(inf))
+            assert phi(lambda_opt) < 0.1, 'did not find solution of phi(lambda)=0:={}'.format(phi(lambda_opt))
 
     if (print_out):
         print('phi(lower_bound)', phi(lower_bound))
