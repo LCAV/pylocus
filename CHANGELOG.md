@@ -2,9 +2,6 @@
 
 ## Unreleased 
 
-## [0.0.4] - 2019-01-28
-### Changed
-
 - Added more detailed documentation. 
 - More flexibility in passing anchor coordinates: Before, one had to add n zero-vectors to the 
 beginning of the coordinates matrix, one for each point to be localized. Now, one can pass
