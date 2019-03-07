@@ -1,7 +1,11 @@
 #!/usr/bin/env python
 # module EDM_COMPLETION
 import numpy as np
-from cvxpy import *
+
+try:
+    from cvxpy import *
+except:
+    print("WARNING from pylocs.edm_completion module: Failed to load cvxpy. This might lead to errors later on.")
 
 from pylocus.basics import get_edm
 

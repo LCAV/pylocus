@@ -51,7 +51,7 @@ Depending on which parts of the project you are using, you might need to install
 
 .. code-block:: bash
 
-  pip install -r requirements.txt
+  pip install -r optional_requirements.txt
 
 Documentation
 *************
