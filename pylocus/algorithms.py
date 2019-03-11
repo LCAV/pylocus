@@ -238,8 +238,7 @@ def reconstruct_sdp(edm, all_points, W=None, print_out=False, lamda=1000, **kwar
     return Xhat, edm_complete
 
 
-def reconstruct_srls(edm, all_points, W=None, print_out=False, rescale=False,
-                     z=None):
+def reconstruct_srls(edm, all_points, W=None, print_out=False, rescale=False, z=None):
     """ Reconstruct point set using S(quared)R(ange)L(east)S(quares) method.
 
     See reconstruct_mds for edm and all_points parameters.
@@ -265,6 +264,9 @@ def reconstruct_srls(edm, all_points, W=None, print_out=False, rescale=False,
 
         try:
             srls = SRLS(anchors, w, r2, rescale, z, print_out)
+            if z is not None:
+                assert srls[2] == z
+
         except Exception as e:
             print(e)
             print("Something went wrong; probably bad geometry. (All anchors in the same plane, two distances are exactly the same, etc.)")
