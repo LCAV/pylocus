@@ -61,6 +61,9 @@ def solve_GTRS(A, b, D, f):
         try:
             return np.linalg.solve(lhs, rhs)
         except:
+            # TODO: It was empirically found that it is essential that the default is 
+            # not zero, but a small negative value. It is not clear why this is the case
+            # from a mathematical point of view. 
             return np.full((lhs.shape[1],), -1e-3)
 
     def phi(_lambda):
@@ -93,17 +96,15 @@ def solve_GTRS(A, b, D, f):
         try: 
             lambda_opt = optimize.newton(phi, lower_bound, maxiter=10000, tol=xtol)
             assert phi(lambda_opt) < xtol, 'did not find solution of phi(lambda)=0:={}'.format(phi(lambda_opt))
-        except Exception as e:
-            print(e)
+        except AssertionError:
             print('SRLS error: newton did not converge. Setting lambda to 0.')
-            assert phi(lambda_opt) < 0.1, 'did not find solution of phi(lambda)=0:={}'.format(phi(lambda_opt))
 
     yhat = y_hat(lambda_opt)
     return yhat
 
 
 def SRLS(anchors, w, r2, rescale=False, z=None, print_out=False):
-    '''Squared range least squares (SRLS)
+    """ Squared range least squares (SRLS)
 
     Algorithm written by A.Beck, P.Stoica in "Approximate and Exact solutions of Source Localization Problems".
 
@@ -119,7 +120,7 @@ def SRLS(anchors, w, r2, rescale=False, z=None, print_out=False):
     :param print_out: Optional parameter, prints extra information.
 
     :return: estimated position of point x.
-    '''
+    """
 
     n, d = anchors.shape
     assert r2.shape[1] == 1 and r2.shape[0] == n, 'r2 has to be of shape Nx1'
@@ -161,6 +162,7 @@ def SRLS(anchors, w, r2, rescale=False, z=None, print_out=False):
 
 
 def SRLS_rescale(anchors, w, r2, print_out=False):
+    """ Helper routine for SRLS. """
     n, d = anchors.shape
 
     A = np.c_[-2 * anchors, np.ones((n, 1)), -r2]
@@ -183,6 +185,7 @@ def SRLS_rescale(anchors, w, r2, print_out=False):
 
 
 def SRLS_fixed_z(anchors, w, r2, z):
+    """ Helper routine for SRLS. """
     n, d = anchors.shape
 
     Sigma = np.diagflat(np.power(w, 0.5))
@@ -207,13 +210,13 @@ def SRLS_fixed_z(anchors, w, r2, z):
 
 
 def PozyxLS(anchors, W, r2, print_out=False):
-    ''' Algorithm used by pozyx (https://www.pozyx.io/Documentation/how_does_positioning_work)
+    """ Algorithm used by pozyx (https://www.pozyx.io/Documentation/how_does_positioning_work)
 
     :param anchors: anchor points
     :param r2: squared distances from anchors to point x.
 
     :returns: estimated position of point x.
-    '''
+    """
     N = anchors.shape[0]
     anchors_term = np.sum(np.power(anchors[:-1], 2), axis=1)
     last_term = np.sum(np.power(anchors[-1], 2))
