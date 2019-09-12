@@ -82,6 +82,10 @@ def eigendecomp(G, d):
     assert (lamda_sorted[
             :d] > -1e-10).all(), "{} not all positive!".format(lamda_sorted[:d])
 
+    # Set the small negative values of 
+    # lamda to zero.
+    lamda_sorted[lamda_sorted < 0] = 0
+
     u = u[:, indices]
     factor = np.empty((N,), dtype=lamda.dtype)
     np.sqrt(lamda_sorted[:d], out=factor[0:d])
