@@ -94,6 +94,8 @@ def procrustes(anchors, X, scale=True, print_out=False):
         n = X.shape[0]
         ones = np.ones((n, 1))
         return X - np.multiply(1 / n * np.dot(ones.T, X), ones)
+
+    assert X.shape[1] == anchors.shape[1], 'Anchors and X must be of shape (mxd) and (Nxd), respectively.'
     m = anchors.shape[0]
     N, d = X.shape
     assert m >= d, 'Have to give at least d anchor nodes.'
@@ -130,6 +132,7 @@ def procrustes(anchors, X, scale=True, print_out=False):
     R = np.dot(U, VT)
     t = muy.T - c * np.dot(R, mux.T)
     X_transformed = (c * np.dot(R, (X - mux).T) + muy.T).T
+    assert np.allclose(X_transformed.shape, X.shape)
     return X_transformed, R, t, c
 
 
@@ -270,7 +273,7 @@ def reconstruct_srls(edm, all_points, W=None, print_out=False, rescale=False, z=
         except Exception as e:
             print(e)
             print("Something went wrong; probably bad geometry. (All anchors in the same plane, two distances are exactly the same, etc.)")
-            raise e
+            print("anchors, w, r2, z:", anchors, w, r2, z)
             return None
 
         if rescale:

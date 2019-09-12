@@ -11,7 +11,7 @@ from test_common import BaseCommon
 from pylocus.point_set import PointSet, create_from_points
 from pylocus.simulation import create_noisy_edm
 from pylocus.algorithms import reconstruct_srls
-from pylocus.lateration import SRLS, get_lateration_parameters
+from pylocus.lateration import SRLS, get_lateration_parameters, GeometryError
 
 class TestSRLS(BaseCommon.TestAlgorithms):
     def setUp(self):
@@ -120,6 +120,15 @@ class TestSRLS(BaseCommon.TestAlgorithms):
         if xhat is not None:
             np.testing.assert_allclose(xhat[0, 2], zreal)
             np.testing.assert_allclose(xhat, self.pts.points)
+
+    def test_srls_fail(self):
+        anchors = np.array([[11.881,  3.722,  1.5  ],
+                            [11.881,  14.85,   1.5 ],
+                            [11.881,  7.683,  1.5  ]])
+        w = np.ones((3, 1))
+        distances = [153.32125426, 503.96654466, 234.80741129] 
+        z = 1.37
+        self.assertRaises(GeometryError, SRLS, anchors, w, distances, False, z)
 
     def zero_weights(self, noise=0.1):
         index = np.arange(self.n)

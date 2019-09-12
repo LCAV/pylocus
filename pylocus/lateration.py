@@ -12,6 +12,9 @@ except:
 
 from pylocus.basics import assert_print, assert_all_print
 
+class GeometryError(Exception):
+    pass
+
 
 def get_lateration_parameters(all_points, indices, index, edm, W=None):
     """ Get parameters relevant for lateration from full all_points, edm and W.
@@ -73,7 +76,10 @@ def solve_GTRS(A, b, D, f):
 
     ATA = np.dot(A.T, A)
 
-    eig = np.sort(np.real(eigvalsh(a=D, b=ATA)))
+    try:
+        eig = np.sort(np.real(eigvalsh(a=D, b=ATA)))
+    except:
+        raise GeometryError('Degenerate configuration.')
     if np.abs(eig[-1]) < 1e-10:
         lower_bound = -1e3
     else:
@@ -123,6 +129,8 @@ def SRLS(anchors, w, r2, rescale=False, z=None, print_out=False):
     """
 
     n, d = anchors.shape
+    if type(r2) == list:
+        r2 = np.array(r2).reshape((-1, 1))
     assert r2.shape[1] == 1 and r2.shape[0] == n, 'r2 has to be of shape Nx1'
     assert w.shape[1] == 1 and w.shape[0] == n, 'w has to be of shape Nx1'
     if z is not None:
@@ -143,7 +151,6 @@ def SRLS(anchors, w, r2, rescale=False, z=None, print_out=False):
 
     if z is not None: 
         return SRLS_fixed_z(anchors, w, r2, z)
-
 
     A = np.c_[-2 * anchors, np.ones((n, 1))]
     b = r2 - np.power(np.linalg.norm(anchors, axis=1), 2).reshape(r2.shape)
@@ -231,7 +238,7 @@ def RLS(anchors, W, r, print_out=False, grid=None, num_points=10):
 
     Algorithm written by A.Beck, P.Stoica in "Approximate and Exact solutions of Source Localization Problems".
 
-    :param anchors: anchor points
+    :param anchors: anchor point coordinates, N x d
     :param r2: squared distances from anchors to point x.
     :param grid: where to search for solution.  (min, max) where min and max  are 
     lists of d elements, d being the dimension of the setup. If not given, the 
