@@ -1,12 +1,15 @@
 # Changelog
 
-## Unreleased 
+## Unreleased
+
+## [0.0.4] - 2019-09-12
+### Changed
 
 - Added more detailed documentation. 
 - More flexibility in passing anchor coordinates: Before, one had to add n zero-vectors to the 
 beginning of the coordinates matrix, one for each point to be localized. Now, one can pass
 the anchor coordinates only, and the zero-vectors will be added automatically where needed.
-- Code now runs without cvxpy installation (as long as it is not used)
+- Cleaned up requirements.
 
 ## [0.0.3] - 2018-07-16
 ### Changed
