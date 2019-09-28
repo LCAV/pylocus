@@ -1,29 +1,30 @@
 #!/usr/bin/env python
-# module SIMULATION_PARAMETERS
+# module SIMULATION
 import numpy as np
 
-def weights_one(N, noise, noise_edm):
+
+def weights_one(N):
     weights = np.ones((N, N))
     weights[range(N), range(N)] = 0.0
     return weights
 
 
-def weights_zero(N, noise, noise_edm):
-    weights = weights_one(N, noise, noise_edm)
+def weights_zero(N):
+    weights = weights_one(N)
     weights[0, 1] = 0.0
     weights[1, 0] = 0.0
     return weights
 
 
 def weights_linear(N, noise, noise_edm):
-    weights = weights_one(N, noise, noise_edm)
+    weights = weights_one(N)
     weights[0, 1] = noise_edm / noise
     weights[1, 0] = weights[0, 1]
     return weights
 
 
 def weights_quadratic(N, noise, noise_edm):
-    weights = weights_one(N, noise, noise_edm)
+    weights = weights_one(N)
     weights[0, 1] = (noise_edm / noise)**2
     weights[1, 0] = weights[0, 1]
     return weights
@@ -98,5 +99,19 @@ def create_mask(N, method='all', nmissing=0):
     return weights
 
 
-if __name__=="__main__":
-    print('nothing happens when running this module. It is only a container of functions.')
+def create_weights(N, method='one', noise=0.0, noise_edm=None):
+    if method == 'one':
+        return weights_one(N)
+    elif method == 'zero':
+        return weights_zero(N)
+    elif method == 'linear':
+        return weights_linear(N, noise, noise_edm)
+    elif method == 'quadratic':
+        return weights_quadratic(N, noise, noise_edm)
+    else:
+        raise NameError("Unknown method", method)
+
+
+
+if __name__ == "__main__":
+    print('nothing happens when running this module.')

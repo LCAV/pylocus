@@ -3,6 +3,7 @@
 from math import atan2, pi
 import numpy as np
 
+
 def change_angles(method, theta, tol=1e-10):
     """ Function used by all angle conversion functions (from_x_to_x_pi(...))"""
     try:
@@ -67,7 +68,8 @@ def get_inner_angle(Pk, Pij):
 def rmse_2pi(x, xhat):
     ''' Calcualte rmse between vector or matrix x and xhat, ignoring mod of 2pi.'''
     real_diff = from_0_to_pi(x - xhat)
-    sum_ = np.sum(np.power(real_diff, 2))
+    np.square(real_diff, out=real_diff)
+    sum_ = np.sum(real_diff)
     return sqrt(sum_ / len(x))
 
 

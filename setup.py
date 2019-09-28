@@ -9,10 +9,9 @@ with open(path.join(here, 'README.rst'), encoding='utf-8') as f:
     long_description = f.read()
 
 setup(
-
     name='pylocus',
 
-    version='1.0.1',
+    version='0.0.3',
 
     description='Localization Package',
 
@@ -59,7 +58,7 @@ setup(
     # your project is installed. For an analysis of "install_requires" vs pip's
     # requirements files see:
     # https://packaging.python.org/en/latest/requirements.html
-    install_requires=['numpy'],
+    install_requires=['numpy', 'cvxpy'],
 
     # List additional groups of dependencies here (e.g. development
     # dependencies). You can install these using the following syntax,
@@ -92,4 +91,9 @@ setup(
         #    'sample=sample:main',
         #],
     },
+
+    project_urls={
+        'Source': 'https://github.com/lcav/pylocus',
+        'Documentation': 'http://pylocus.readthedocs.io/en/latest/'
+    }
 )

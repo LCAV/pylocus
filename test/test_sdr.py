@@ -3,7 +3,7 @@
 
 import unittest
 import numpy as np
-from test_common import BaseCommon
+from .test_common import BaseCommon
 
 from pylocus.point_set import PointSet
 from pylocus.algorithms import reconstruct_sdp
@@ -26,25 +26,24 @@ class TestSDP(BaseCommon.TestAlgorithms):
 
     def call_method(self, method=''):
         print('TestSDP:call_method')
-        Xhat, edm = reconstruct_sdp(self.pts.edm, real_points=self.pts.points,
-                                    solver='SCS', eps=1e-10, method='maximize')
+        Xhat, edm = reconstruct_sdp(self.pts.edm, all_points=self.pts.points,
+                                    solver='CVXOPT', method='maximize')
         return Xhat
 
     def test_parameters(self):
         print('TestSDP:test_parameters')
         self.create_points()
-        epsilons = [1e-3, 1e-5, 1e-8]
+        epsilons = [1e-3, 1e-5, 1e-7]
         options_list = [{},
                         {'solver': 'CVXOPT',
                          'abstol': 1e-5,
                          'reltol': 1e-6,
-                         'feastol': 1e-7},
-                        {'solver': 'SCS',
-                         'eps': 1e-10}]
+                         'feastol': 1e-7}]
         for options, eps in zip(options_list, epsilons):
+            print('testing options', options, eps)
             self.eps = eps
             points_estimate, __ = reconstruct_sdp(
-                self.pts.edm, real_points=self.pts.points, method='maximize', **options)
+                self.pts.edm, all_points=self.pts.points, method='maximize', **options)
             error = np.linalg.norm(self.pts.points - points_estimate)
             self.assertTrue(error < self.eps, 'with options {} \nerror: {} not smaller than {}'.format(
                 options, error, self.eps))
