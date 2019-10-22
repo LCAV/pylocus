@@ -35,7 +35,6 @@ class BaseCommon:
             for i in range(self.n_it): # seed 381 used to fail.
                 np.random.seed(i)
                 self.test_zero_noise(it=i)
-                self.test_zero_noise_relaxed()
 
         def test_zero_noise(self, it=0):
             print('TestCommon:test_zero_noise')
@@ -46,24 +45,4 @@ class BaseCommon:
                         points_estimate = self.call_method(method)
                         if points_estimate is None:
                             continue
-                        error = np.linalg.norm(self.pts.points - points_estimate) 
-                        self.assertTrue(error < self.eps, 
-                                        'error (method={}, it={}, N={}, d={}): {} not smaller than {}'.format(method, it, N, d, error, self.eps))
-
-        def test_zero_noise_relaxed(self):
-            print('TestCommon:test_zero_noise_relaxed')
-            success = 0
-            total = 0
-            for N in self.N_relaxed:
-                for d in (2, 3):
-                    self.create_points(N, d)
-                    for method in self.methods: 
-                        points_estimate = self.call_method(method)
-                        if points_estimate is None:
-                            continue
-                        error = np.linalg.norm(self.pts.points - points_estimate) 
-                        if error < self.eps:
-                            success +=1
-                        total +=1
-            rate = success/total*100
-            self.assertTrue(rate >= self.success_rate, 'noiseless success rate below {}: {}'.format(self.success_rate, rate))
+                        np.testing.assert_allclose(self.pts.points, points_estimate, self.eps)

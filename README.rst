@@ -1,5 +1,5 @@
-pylocus 
-=======
+Welcome to pylocus 
+==================
 
 .. image:: https://travis-ci.org/LCAV/pylocus.svg?branch=master
     :target: https://travis-ci.org/LCAV/pylocus
@@ -8,7 +8,7 @@ Python Localization Package
 ---------------------------
 
 
-MDS, lateration and other algorithms, used for localization using distances and/or angles.
+This package contains Multidimensional Scaling, lateration, and other algorithms useful for localization using distances and/or angles.
 
 Local install
 *************
@@ -51,7 +51,7 @@ Depending on which parts of the project you are using, you might need to install
 
 .. code-block:: bash
 
-  pip install -r requirements.txt
+  pip install -r optional_requirements.txt
 
 Documentation
 *************

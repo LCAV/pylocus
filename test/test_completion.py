@@ -12,7 +12,7 @@ class TestAlgorithms(unittest.TestCase):
         self.pts = PointSet(N=5, d=3)
         self.pts.set_points(mode='convex')
         W = np.ones(self.pts.edm.shape)
-        indices_missing = [[4,1],[0,3]]
+        indices_missing = ([4,1],[0,3])
         W[indices_missing] = 0.0
         W = np.multiply(W, W.T)
         np.fill_diagonal(W, 0.0)
