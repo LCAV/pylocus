@@ -1,5 +1,8 @@
 #!/usr/bin/env python
 # module ALGORITHMS
+
+from math import pi
+
 import numpy as np
 
 IMPLEMENTED_METHODS = ['MDS',
@@ -58,6 +61,26 @@ def classical_mds(D):
     return MDS(D, 1, 'geometric')
 
 
+def complete_points(all_points, N):
+    ''' add zero-rows to top of all_points to reach total of N. 
+    :param all_points: m x d array, where m <= N 
+    :param N: final dimension of all_points.
+
+    :return: number of added lines (n), new array all_points of size Nxd
+    
+    '''
+    m = all_points.shape[0]
+    d = all_points.shape[1]
+    n = 1 # number of points to localize
+    if m < N:
+        n = N-m
+        all_points = np.r_[np.zeros((n, d)), all_points]
+        assert all_points.shape == (N, d)
+    elif m > N:
+        raise ValueError("Cannot have more anchor points than edm entries.")
+    return n, all_points
+
+
 def procrustes(anchors, X, scale=True, print_out=False):
     """ Fit X to anchors by applying optimal translation, rotation and reflection.
 
@@ -65,7 +88,7 @@ def procrustes(anchors, X, scale=True, print_out=False):
     of coordinates X (output of EDM algorithm) optimally matching anchors in least squares sense.
 
     :param anchors: Matrix of shape m x d, where m is number of anchors, d is dimension of setup.
-    :param X: Matrix of shape N x d, where the last m points will be used to find fit with the anchors. 
+    :param X: Matrix of shape N x d, of which the last m rows will be used to find fit with the anchors. 
     :param scale: set to True if the point set should be scaled to match the anchors.
     
     :return: the transformed vector X, the rotation matrix, translation vector, and scaling factor.
@@ -74,6 +97,8 @@ def procrustes(anchors, X, scale=True, print_out=False):
         n = X.shape[0]
         ones = np.ones((n, 1))
         return X - np.multiply(1 / n * np.dot(ones.T, X), ones)
+
+    assert X.shape[1] == anchors.shape[1], 'Anchors and X must be of shape (mxd) and (Nxd), respectively.'
     m = anchors.shape[0]
     N, d = X.shape
     assert m >= d, 'Have to give at least d anchor nodes.'
@@ -86,10 +111,11 @@ def procrustes(anchors, X, scale=True, print_out=False):
     sigmaxy = 1 / m * np.dot((anchors - muy).T, X_m - mux)
     try:
         U, D, VT = np.linalg.svd(sigmaxy)
-    except np.LinAlgError:
+    except:
         print('strange things are happening...')
         print(sigmaxy)
         print(np.linalg.matrix_rank(sigmaxy))
+        raise
     #this doesn't work and doesn't seem to be necessary! (why?)
     #  S = np.eye(D.shape[0])
     #  if (np.linalg.det(U)*np.linalg.det(VT.T) < 0):
@@ -109,6 +135,7 @@ def procrustes(anchors, X, scale=True, print_out=False):
     R = np.dot(U, VT)
     t = muy.T - c * np.dot(R, mux.T)
     X_transformed = (c * np.dot(R, (X - mux).T) + muy.T).T
+    assert np.allclose(X_transformed.shape, X.shape)
     return X_transformed, R, t, c
 
 
@@ -167,13 +194,24 @@ def reconstruct_cdm(dm, absolute_angles, all_points, W=None):
     return Y
 
 
-def reconstruct_mds(edm, all_points, completion='optspace', mask=None, method='geometric', print_out=False, n=1):
+def reconstruct_mds(edm, all_points, completion='optspace', mask=None, method='geometric', print_out=False):
     """ Reconstruct point set using MDS and matrix completion algorithms.
+
+    :param edm: Euclidean distance matrix, NxN. 
+    :param all_points: Mxd vector of anchor coordinates. if M < N, M-N 0-row-vectors will be added to the beginning of the array. If M=N and n is not specified, we assume that the first row corresponds to the point to be localized. 
+    :param completion: can be 'optspace' or 'alternate'. Algorithm to use for matrix completion. See pylocus.edm_completion for details.
+    :param mask: Optional mask of missing entries.  
+    :param method: method to be used for MDS algorithm. See method "MDS" from pylocus.mds module for details. 
+
     """
+
     from .point_set import dm_from_edm
     from .mds import MDS
-    N = all_points.shape[0]
     d = all_points.shape[1]
+    N = edm.shape[0]
+
+    n, all_points = complete_points(all_points, N)
+
     if mask is not None:
         edm_missing = np.multiply(edm, mask)
         if completion == 'optspace':
@@ -191,8 +229,8 @@ def reconstruct_mds(edm, all_points, completion='optspace', mask=None, method='g
             print('{}: relative error:{}'.format(completion, err))
         edm = edm_complete
     Xhat = MDS(edm, d, method, False).T
+    assert (~np.isnan(Xhat)).all()
     Y, R, t, c = procrustes(all_points[n:], Xhat, True)
-    #Y, R, t, c = procrustes(all_points, Xhat, True)
     return Y
 
 
@@ -206,11 +244,19 @@ def reconstruct_sdp(edm, all_points, W=None, print_out=False, lamda=1000, **kwar
     return Xhat, edm_complete
 
 
-def reconstruct_srls(edm, all_points, W=None, print_out=False, n=1, rescale=False,
-                     z=None):
+def reconstruct_srls(edm, all_points, W=None, print_out=False, rescale=False, z=None):
     """ Reconstruct point set using S(quared)R(ange)L(east)S(quares) method.
+
+    See reconstruct_mds for edm and all_points parameters.
+
+    :param W: optional weights matrix, same dimension as edm. 
+    :param rescale, z: optional parameters for SRLS. See SRLS documentation for explanation (module pylocus.lateration)
     """
     from .lateration import SRLS, get_lateration_parameters
+
+    N = edm.shape[0]
+    n, all_points = complete_points(all_points, N)
+
     Y = all_points.copy()
     indices = range(n)
     for index in indices:
@@ -222,7 +268,17 @@ def reconstruct_srls(edm, all_points, W=None, print_out=False, n=1, rescale=Fals
             print('w', w)
             print('r2', r2)
 
-        srls = SRLS(anchors, w, r2, rescale, z, print_out)
+        try:
+            srls = SRLS(anchors, w, r2, rescale, z, print_out)
+            if z is not None:
+                assert srls[2] == z
+
+        except Exception as e:
+            print(e)
+            print("Something went wrong; probably bad geometry. (All anchors in the same plane, two distances are exactly the same, etc.)")
+            print("anchors, w, r2, z:", anchors, w, r2, z)
+            return None
+
         if rescale:
             srls = srls[0]  # second element of output is the scale
         Y[index, :] = srls
@@ -377,3 +433,98 @@ def reconstruct_dwmds(edm, X0, W=None, n=None, r=None, X_bar=None, print_out=Fal
 
 if __name__ == "__main__":
     print('nothing happens when running this module.')
+
+
+def reconstruct_aloc(Pi, Pj, i, j, theta_tensor, Pk='', k=-1, print_out=False):
+    from pylocus.point_set import AngleSet 
+    from pylocus.basics_angles import get_absolute_angle
+    from pylocus.basics_angles import get_absolute_angles_tensor
+    from pylocus.basics_angles import from_0_to_2pi
+    from math import cos, sin
+    '''
+    Returns the reconstruction of pointset from inner angles vector theta. If Pk and k are set, it corrects for the original flip.
+    Args:
+        Pi: point i of base line.
+        Pj: point j of base line.
+        i: index of point Pi.
+        j: index of point Pj.
+        theta: tensor containing inner angles
+        Pk: coordinates of point k (cannot be 0 for now.)
+        k: index of point Pk
+    Returns:
+        own: obtained AngleSet object
+    '''
+    # Initialize to fix orientation
+    N = theta_tensor.shape[0]
+    own = AngleSet(N, Pi.shape[0])
+    own.points[i, :] = Pi
+    own.points[j, :] = Pj
+    alpha_ij = get_absolute_angle(Pi, Pj)
+    alpha_ji = get_absolute_angle(Pj, Pi)
+    if (print_out):
+        print('alpha_ij, alpha_ji', 180 * np.array((alpha_ij, alpha_ji)) / pi)
+
+    left_indices = np.delete(np.arange(N), (i, j))
+
+    # Get directed angles for both points.
+    __, alphas_tensor, __ = get_absolute_angles_tensor(
+        theta_tensor, theta_tensor, (i, j), N)
+
+    # Correct for consistent flip.
+    if abs(alphas_tensor[j, j, k] - alpha_ji) < pi:
+        if (print_out):
+            print('flip', j)
+        alphas_tensor[j, :, :] *= -1
+    if abs(alphas_tensor[i, i, k] - alpha_ij) < pi:
+        if (print_out):
+            print('flip', i)
+        alphas_tensor[i, :, :] *= -1
+    if (print_out):
+        print('alphas_tensor', alphas_tensor * 180 / pi)
+
+    # Correct for true flip.
+    alpha_ij = get_absolute_angle(Pi, Pj)
+    alphas_tensor[i, i, :] = from_0_to_2pi(alphas_tensor[i, j, :] + alpha_ij)
+    if k >= 0:
+        alpha_ik = get_absolute_angle(Pi, Pk)
+        calc_alpha_ik = alphas_tensor[i, i, k]
+        diff_calc = from_0_to_2pi(alpha_ij - calc_alpha_ik)
+        diff = from_0_to_2pi(alpha_ij - alpha_ik)
+        if diff_calc < pi and diff_calc > 0:
+            if not (diff < pi and diff > 0):
+                alphas_tensor *= -1.0
+        else:
+            if not (diff > pi or diff < 0):
+                alphas_tensor *= -1.0
+
+    alpha_ji = get_absolute_angle(Pj, Pi)
+    alphas_tensor[i, i, :] = from_0_to_2pi(alphas_tensor[i, j, :] + alpha_ij)
+    alphas_tensor[:, range(N), range(N)] = 0.0
+    alphas_tensor[j, j, :] = from_0_to_2pi(alphas_tensor[j, i, :] + alpha_ji)
+    alphas_tensor[:, range(N), range(N)] = 0.0
+    alphas_tensor[i, :, i] = from_0_to_2pi(alphas_tensor[i, :, j] + alpha_ji)
+    alphas_tensor[:, range(N), range(N)] = 0.0
+    alphas_tensor[j, :, j] = from_0_to_2pi(alphas_tensor[j, :, i] + alpha_ij)
+    alphas_tensor[:, range(N), range(N)] = 0.0
+
+    for k in left_indices:
+        alpha_ik = alphas_tensor[i, i, k]
+        alpha_jk = alphas_tensor[j, j, k]
+        if print_out and k >= 0:
+            real_alpha_ik = get_absolute_angle(Pi, Pk)
+            real_alpha_jk = get_absolute_angle(Pj, Pk)
+            print('real alpha_ik, alpha_jk', 180 *
+                  np.array((real_alpha_ik, real_alpha_jk)) / pi)
+            print('calc alpha_ik, alpha_jk', 180 *
+                  np.array((alpha_ik, alpha_jk)) / pi)
+        A = np.matrix([[cos(alpha_ik), -cos(alpha_jk)],
+                       [sin(alpha_ik), -sin(alpha_jk)]])
+        b = Pj - Pi
+        s = np.linalg.solve(A, b)
+        Pk_1 = Pi + s[0] * np.array([cos(alpha_ik), sin(alpha_ik)])
+        Pk_2 = Pj + s[1] * np.array([cos(alpha_jk), sin(alpha_jk)])
+        assert np.isclose(Pk_1, Pk_2).all()
+        own.points[k, :] = Pk_1
+    own.init()
+    own.get_theta_tensor()
+    return own

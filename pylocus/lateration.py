@@ -3,9 +3,17 @@
 
 import numpy as np
 from scipy.linalg import eigvals, eigvalsh
-from cvxpy import *
+
+try:
+    from cvxpy import *
+except:
+    print("WARNING from pylocs.lateration module: Failed to load cvxpy. This might lead to errors later on.")
+
 
 from pylocus.basics import assert_print, assert_all_print
+
+class GeometryError(Exception):
+    pass
 
 
 def get_lateration_parameters(all_points, indices, index, edm, W=None):
@@ -42,8 +50,67 @@ def get_lateration_parameters(all_points, indices, index, edm, W=None):
     return anchors, w, r2
 
 
+def solve_GTRS(A, b, D, f):
+    from scipy import optimize
+    from scipy.linalg import sqrtm
+
+    def y_hat(_lambda):
+        lhs = ATA + _lambda * D
+        assert A.shape[0] == b.shape[0]
+        assert A.shape[1] == f.shape[0], 'A {}, f {}'.format(A.shape, f.shape)
+        rhs = (np.dot(A.T, b) - _lambda * f).reshape((-1,))
+        assert lhs.shape[0] == rhs.shape[0], 'lhs {}, rhs {}'.format(
+            lhs.shape, rhs.shape)
+        try:
+            return np.linalg.solve(lhs, rhs)
+        except:
+            # TODO: It was empirically found that it is essential that the default is 
+            # not zero, but a small negative value. It is not clear why this is the case
+            # from a mathematical point of view. 
+            return np.full((lhs.shape[1],), -1e-3)
+
+    def phi(_lambda):
+        yhat = y_hat(_lambda).reshape((-1, 1))
+        sol = np.dot(yhat.T, np.dot(D, yhat)) + 2 * np.dot(f.T, yhat)
+        return sol.flatten()
+
+    ATA = np.dot(A.T, A)
+
+    try:
+        eig = np.sort(np.real(eigvalsh(a=D, b=ATA)))
+    except:
+        raise GeometryError('Degenerate configuration.')
+    if np.abs(eig[-1]) < 1e-10:
+        lower_bound = -1e3
+    else:
+        lower_bound = - 1.0 / eig[-1] 
+
+    inf = 1e5
+    xtol = 1e-12
+
+    lambda_opt = 0
+    # We will look for the zero of phi between lower_bound and inf. 
+    # Therefore, the two have to be of different signs. 
+    if (phi(lower_bound) > 0) and (phi(inf) < 0): 
+        try: 
+            # brentq is considered the best rootfinding routine. 
+            lambda_opt, r = optimize.brentq(phi, lower_bound, inf, xtol=xtol, full_output=True)
+            assert r.converged
+        except:
+            print('SRLS error: brentq did not converge even though we found an estimate for lower and upper bonud. Setting lambda to 0.')
+    else: 
+        try: 
+            lambda_opt = optimize.newton(phi, lower_bound, maxiter=10000, tol=xtol)
+            assert phi(lambda_opt) < xtol, 'did not find solution of phi(lambda)=0:={}'.format(phi(lambda_opt))
+        except AssertionError:
+            print('SRLS error: newton did not converge. Setting lambda to 0.')
+
+    yhat = y_hat(lambda_opt)
+    return yhat
+
+
 def SRLS(anchors, w, r2, rescale=False, z=None, print_out=False):
-    '''Squared range least squares (SRLS)
+    """ Squared range least squares (SRLS)
 
     Algorithm written by A.Beck, P.Stoica in "Approximate and Exact solutions of Source Localization Problems".
 
@@ -59,36 +126,11 @@ def SRLS(anchors, w, r2, rescale=False, z=None, print_out=False):
     :param print_out: Optional parameter, prints extra information.
 
     :return: estimated position of point x.
-    '''
-    def y_hat(_lambda):
-        lhs = ATA + _lambda * D
-        assert A.shape[0] == b.shape[0]
-        assert A.shape[1] == f.shape[0], 'A {}, f {}'.format(A.shape, f.shape)
-        rhs = (np.dot(A.T, b) - _lambda * f).reshape((-1,))
-        assert lhs.shape[0] == rhs.shape[0], 'lhs {}, rhs {}'.format(
-            lhs.shape, rhs.shape)
-        try:
-            return np.linalg.solve(lhs, rhs)
-        except:
-            return np.zeros((lhs.shape[1],))
-
-    def phi(_lambda):
-        yhat = y_hat(_lambda).reshape((-1, 1))
-        sol = np.dot(yhat.T, np.dot(D, yhat)) + 2 * np.dot(f.T, yhat)
-        return sol.flatten()
-
-    def phi_prime(_lambda):
-        # TODO: test this.
-        B = np.linalg.inv(ATA + _lambda * D)
-        C = A.T.dot(b) - _lambda*f
-        y_prime = -B.dot(D.dot(B.dot(C)) - f)
-        y = y_hat(_lambda)
-        return 2*y.T.dot(D).dot(y_prime) + 2*f.T.dot(y_prime)
-
-    from scipy import optimize
-    from scipy.linalg import sqrtm
+    """
 
     n, d = anchors.shape
+    if type(r2) == list:
+        r2 = np.array(r2).reshape((-1, 1))
     assert r2.shape[1] == 1 and r2.shape[0] == n, 'r2 has to be of shape Nx1'
     assert w.shape[1] == 1 and w.shape[0] == n, 'w has to be of shape Nx1'
     if z is not None:
@@ -96,119 +138,92 @@ def SRLS(anchors, w, r2, rescale=False, z=None, print_out=False):
 
     if rescale and z is not None:
         raise NotImplementedError('Cannot run rescale for fixed z.')
+
     if rescale and n < d + 2:
-        raise ValueError(
-            'A minimum of d + 2 ranges are necessary for rescaled ranging.')
-    elif n < d + 1 and z is None:
-        raise ValueError(
-            'A minimum of d + 1 ranges are necessary for ranging.')
-    elif n < d:
-        raise ValueError(
-            'A minimum of d ranges are necessary for ranging.')
+        raise ValueError('A minimum of d + 2 ranges are necessary for rescaled ranging.')
+    elif z is None and n < d + 1:
+        raise ValueError('A minimum of d + 1 ranges are necessary for ranging.')
+    elif z is not None and n < d:
+        raise ValueError('A minimum of d ranges are necessary for ranging.')
+
+    if rescale: 
+        return SRLS_rescale(anchors, w, r2, print_out)
+
+    if z is not None: 
+        return SRLS_fixed_z(anchors, w, r2, z)
+
+    A = np.c_[-2 * anchors, np.ones((n, 1))]
+    b = r2 - np.power(np.linalg.norm(anchors, axis=1), 2).reshape(r2.shape)
+
+    Sigma = np.diagflat(np.power(w, 0.5))
+    A = Sigma.dot(A)
+    b = Sigma.dot(b)
+
+    D = np.zeros((d + 1, d + 1))
+    D[:-1, :-1] = np.eye(D.shape[0]-1)
+
+    f = np.c_[np.zeros((1, d)), -0.5].T
+
+    yhat = solve_GTRS(A, b, D, f)
+    return yhat[:d]
+
+
+def SRLS_rescale(anchors, w, r2, print_out=False):
+    """ Helper routine for SRLS. """
+    n, d = anchors.shape
+
+    A = np.c_[-2 * anchors, np.ones((n, 1)), -r2]
+    b = - np.power(np.linalg.norm(anchors, axis=1), 2).reshape(r2.shape)
+
+    Sigma = np.diagflat(np.power(w, 0.5))
+    A = Sigma.dot(A)
+    b = Sigma.dot(b)
+
+    D = np.zeros((d + 2, d + 2))
+    D[:d, :d] = np.eye(d)
+
+    f = np.c_[np.zeros((1, d)), -0.5, 0.].T
+
+    yhat = solve_GTRS(A, b, D, f)
+
+    if print_out:
+        print('Scaling factor :', yhat[-1])
+    return yhat[:d], yhat[-1]
+
+
+def SRLS_fixed_z(anchors, w, r2, z):
+    """ Helper routine for SRLS. """
+    n, d = anchors.shape
 
     Sigma = np.diagflat(np.power(w, 0.5))
 
-    if rescale:
-        A = np.c_[-2 * anchors, np.ones((n, 1)), -r2]
-    else:
-        if z is None:
-            A = np.c_[-2 * anchors, np.ones((n, 1))]
-        else:
-            A = np.c_[-2 * anchors[:, :2], np.ones((n, 1))]
+    A = np.c_[-2 * anchors[:, :2], np.ones((n, 1))]
 
-        A = Sigma.dot(A)
+    b = r2 - np.power(np.linalg.norm(anchors, axis=1), 2).reshape(r2.shape)
+    b = b + 2 * anchors[:, 2].reshape((-1, 1)) * z - z**2
 
-    if rescale:
-        b = - np.power(np.linalg.norm(anchors, axis=1), 2).reshape(r2.shape)
-    else:
-        b = r2 - np.power(np.linalg.norm(anchors, axis=1), 2).reshape(r2.shape)
-        if z is not None:
-            b = b + 2 * anchors[:, 2].reshape((-1, 1)) * z - z**2
-        b = Sigma.dot(b)
+    A = Sigma.dot(A)
+    b = Sigma.dot(b)
 
     ATA = np.dot(A.T, A)
 
-    if rescale:
-        D = np.zeros((d + 2, d + 2))
-        D[:d, :d] = np.eye(d)
-    else:
-        if z is None:
-            D = np.zeros((d + 1, d + 1))
-        else:
-            D = np.zeros((d, d))
-        D[:-1, :-1] = np.eye(D.shape[0]-1)
+    D = np.zeros((d, d))
+    D[:-1, :-1] = np.eye(D.shape[0]-1)
 
-    if rescale:
-        f = np.c_[np.zeros((1, d)), -0.5, 0.].T
-    elif z is None:
-        f = np.c_[np.zeros((1, d)), -0.5].T
-    else:
-        f = np.c_[np.zeros((1, 2)), -0.5].T
+    f = np.c_[np.zeros((1, 2)), -0.5].T
 
-    eig = np.sort(np.real(eigvalsh(a=D, b=ATA)))
-    if (print_out):
-        print('ATA:', ATA)
-        print('rank:', np.linalg.matrix_rank(A))
-        print('eigvals:', eigvals(ATA))
-        print('condition number:', np.linalg.cond(ATA))
-        print('generalized eigenvalues:', eig)
-
-    #eps = 0.01
-    if eig[-1] > 1e-10:
-        lower_bound = - 1.0 / eig[-1] 
-    else:
-        print('Warning: biggest eigenvalue is zero!')
-        lower_bound = -1e-5
-
-    inf = 1e5
-    xtol = 1e-12
-
-    lambda_opt = 0
-    # We will look for the zero of phi between lower_bound and inf. 
-    # Therefore, the two have to be of different signs. 
-    if (phi(lower_bound) > 0) and (phi(inf) < 0): 
-        # brentq is considered the best rootfinding routine. 
-        try: 
-            lambda_opt = optimize.brentq(phi, lower_bound, inf, xtol=xtol)
-        except:
-            print('SRLS error: brentq did not converge even though we found an estimate for lower and upper bonud. Setting lambda to 0.')
-    else: 
-        try: 
-            lambda_opt = optimize.newton(phi, lower_bound, fprime=phi_prime, maxiter=1000, tol=xtol, verbose=True)
-            assert phi(lambda_opt) < xtol, 'did not find solution of phi(lambda)=0:={}'.format(phi(lambda_opt))
-        except:
-            print('SRLS error: newton did not converge. Setting lambda to 0.')
-
-    if (print_out):
-        print('phi(lower_bound)', phi(lower_bound))
-        print('phi(inf)', phi(inf))
-        print('phi(lambda_opt)', phi(lambda_opt))
-        pos_definite = ATA + lambda_opt*D
-        eig = np.sort(np.real(eigvals(pos_definite)))
-        print('should be strictly bigger than 0:', eig)
-
-    # Compute best estimate
-    yhat = y_hat(lambda_opt)
-
-    if print_out and rescale:
-        print('Scaling factor :', yhat[-1])
-
-    if rescale:
-        return yhat[:d], yhat[-1]
-    elif z is None:
-        return yhat[:d]
-    else:
-        return np.r_[yhat[0], yhat[1], z]
+    yhat = solve_GTRS(A, b, D, f)
+    return np.r_[yhat[0], yhat[1], z]
 
 
 def PozyxLS(anchors, W, r2, print_out=False):
-    ''' Algorithm used by pozyx (https://www.pozyx.io/Documentation/how_does_positioning_work)
+    """ Algorithm used by pozyx (https://www.pozyx.io/Documentation/how_does_positioning_work)
 
     :param anchors: anchor points
     :param r2: squared distances from anchors to point x.
 
     :returns: estimated position of point x.
-    '''
+    """
     N = anchors.shape[0]
     anchors_term = np.sum(np.power(anchors[:-1], 2), axis=1)
     last_term = np.sum(np.power(anchors[-1], 2))
@@ -223,7 +238,7 @@ def RLS(anchors, W, r, print_out=False, grid=None, num_points=10):
 
     Algorithm written by A.Beck, P.Stoica in "Approximate and Exact solutions of Source Localization Problems".
 
-    :param anchors: anchor points
+    :param anchors: anchor point coordinates, N x d
     :param r2: squared distances from anchors to point x.
     :param grid: where to search for solution.  (min, max) where min and max  are 
     lists of d elements, d being the dimension of the setup. If not given, the 

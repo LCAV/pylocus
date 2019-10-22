@@ -3,9 +3,13 @@
 point-to-point distances and angles.
 """
 
-import numpy as np
-from pylocus.settings import *
+import itertools
 from math import pi
+
+import numpy as np
+
+from pylocus.settings import *
+from pylocus.basics_angles import get_index
 
 
 class PointSet:
@@ -267,7 +271,6 @@ class AngleSet(PointSet):
         reconstructed from point coordinates.
         Also returns the corners corresponding to each entry of theta.
         """
-        import itertools
         from pylocus.basics_angles import from_0_to_pi
         theta = np.empty((self.M, ))
         corners = np.empty((self.M, 3))
@@ -389,7 +392,7 @@ class AngleSet(PointSet):
         return T
 
     def get_theta_tensor(self):
-        from pylocuspylocus.basics_angles import get_theta_tensor
+        from pylocus.basics_angles import get_theta_tensor
         self.theta_tensor = get_theta_tensor(self.theta, self.corners, self.N)
         return self.theta_tensor
 
@@ -440,8 +443,10 @@ class AngleSet(PointSet):
         return G
 
     def reconstruct_from_inner_angles(self, theta):
-        from .algorithms import reconstruct_from_inner_angles
-        from .algorithms import procrustes
+        from pylocus.algorithms import reconstruct_from_inner_angles
+        from pylocus.algorithms import procrustes
+        from pylocus.basics_angles import get_theta_tensor
+
         theta_tensor = get_theta_tensor(theta, self.corners, self.N)
         reconstruction = reconstruct_from_inner_angles(
             self.points[0, :], self.points[1, :], self.abs_angles[0, 2],
@@ -452,8 +457,9 @@ class AngleSet(PointSet):
         reconstruction.init()
         return reconstruction
 
-    def reconstruct(self, theta):
-        from .algorithms import reconstruct
+    def reconstruct_aloc(self, theta):
+        from pylocus.algorithms import reconstruct_aloc
+        from pylocus.basics_angles import get_theta_tensor
         i = 0
         j = 1
         theta_tensor = get_theta_tensor(theta, self.corners, self.N)
@@ -461,7 +467,7 @@ class AngleSet(PointSet):
         Pj = self.points[j, :]
         k = 2
         Pk = self.points[k, :]
-        reconstruction = reconstruct(Pi, Pj, i, j, theta_tensor, Pk, k)
+        reconstruction = reconstruct_aloc(Pi, Pj, i, j, theta_tensor, Pk, k)
         return reconstruction
 
     def get_convex_polygons(self, m, print_out=False):
