@@ -46,10 +46,10 @@ class TestSRLSFail(unittest.TestCase):
         self.weights[1:, 0] = weights
 
     def test_strange_case(self):
-        xhat = reconstruct_srls(self.edm, self.all_points, n=1,
+        xhat = reconstruct_srls(self.edm, self.all_points, 
                                 W=self.weights)
         print(xhat[0])
-        xhat = reconstruct_srls(self.edm, self.all_points, n=1,
+        xhat = reconstruct_srls(self.edm, self.all_points, 
                                 W=self.weights, rescale=False,
                                 z=self.all_points[0, 2])
         print(xhat[0])

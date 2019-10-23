@@ -1,7 +1,10 @@
 #!/usr/bin/env python
 # module MDS
 import numpy as np
-from cvxpy import *
+try:
+    from cvxpy import *
+except:
+    print("WARNING from pylocs.mds module: Failed to load cvxpy. This might lead to errors later on.")
 
 from pylocus.basics import eigendecomp
 
@@ -20,7 +23,13 @@ def x_from_eigendecomp(factor, u, dim):
 
 
 def MDS(D, dim, method='simple', theta=False):
-    """ recover points from euclidean distance matrix using classic MDS algorithm. 
+    """ Recover points from euclidean distance matrix using classic MDS algorithm. 
+    
+    :param D: Euclidean distance matrix.
+    :param dim: dimension of points. 
+    :param method: method to use. Can be either "simple", "advanced" or "geometric". 
+    :param theta: set to True if using this function in a 1D-angle-setting. 
+
     """
     N = D.shape[0]
     if method == 'simple':
@@ -168,7 +177,3 @@ def signedMDS(cdm, W=None):
     x_est -= np.min(x_est)
 
     return x_est, A, np.linalg.pinv(A)
-
-
-if __name__ == "__main__":
-    print('nothing happens when running this module.')
