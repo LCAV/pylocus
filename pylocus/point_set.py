@@ -697,6 +697,12 @@ class HeterogenousSet(PointSet):
         b = np.zeros((C2.shape[0], 1))
         return C2, b
 
+    def copy(self):
+        new = HeterogenousSet(self.N, self.d)
+        new.points = self.points.copy()
+        new.init()
+        return new
+
 
 def dm_from_edm(edm):
     from pylocus.basics import vector_from_matrix
