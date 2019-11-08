@@ -4,11 +4,7 @@
 import numpy as np
 from scipy.linalg import eigvals, eigvalsh
 
-try:
-    from cvxpy import *
-except:
-    print("WARNING from pylocs.lateration module: Failed to load cvxpy. This might lead to errors later on.")
-
+import cvxpy as cp
 
 from pylocus.basics import assert_print, assert_all_print
 
@@ -302,8 +298,8 @@ def RLS_SDR(anchors, W, r, print_out=False):
     m = anchors.shape[0]
     d = anchors.shape[1]
 
-    G = Variable(m + 1, m + 1)
-    X = Variable(d + 1, d + 1)
+    G = cp.Variable(m + 1, m + 1)
+    X = cp.Variable(d + 1, d + 1)
     constraints = [G[m, m] == 1.0,
                    X[d, d] == 1.0,
                    G >> 0, X >> 0,
@@ -313,10 +309,10 @@ def RLS_SDR(anchors, W, r, print_out=False):
         Ci[:-1, -1] = -anchors[i]
         Ci[-1, :-1] = -anchors[i].T
         Ci[-1, -1] = np.linalg.norm(anchors[i])**2
-        constraints.append(G[i, i] == trace(Ci * X))
+        constraints.append(G[i, i] == cp.trace(Ci * X))
 
-    obj = Minimize(trace(G) - 2 * sum_entries(mul_elemwise(r, G[m, :-1].T)))
-    prob = Problem(obj, constraints)
+    obj = cp.Minimize(cp.trace(G) - 2 * cp.sum_entries(cp.mul_elemwise(r, G[m, :-1].T)))
+    prob = cp.Problem(obj, constraints)
 
     ## Solution
     total = prob.solve(verbose=True)

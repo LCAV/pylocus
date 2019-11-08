@@ -90,10 +90,10 @@ class PointSet:
                         self.points[other, :] + alpha * u + beta * v)
                     #check if new direction lies between u and v.
                     new_direction = self.points[-1, :] - self.points[other, :]
-                    new_direction = new_direction.reshape(
+                    new_direction = new_direction.cp.reshape(
                         (-1, )) / np.linalg.norm(new_direction)
-                    u = u.reshape((-1, )) / np.linalg.norm(u)
-                    v = v.reshape((-1, )) / np.linalg.norm(v)
+                    u = u.cp.reshape((-1, )) / np.linalg.norm(u)
+                    v = v.cp.reshape((-1, )) / np.linalg.norm(v)
                     #print('{} + {} = {}'.format(acos(np.dot(new_direction,u)),acos(np.dot(new_direction,v)),acos(np.dot(u,v))))
                     if abs(
                             acos(np.dot(new_direction, u)) +
@@ -607,13 +607,13 @@ class AngleSet(PointSet):
         b = np.hstack(rows_b)
         num_constraints = A.shape[0]
         A_repeat = np.repeat(A.astype(bool), 3).reshape((1, -1))
-        corners = self.corners.reshape((1, -1))
+        corners = self.corners.cp.reshape((1, -1))
         corners_tiled = np.tile(corners, num_constraints)
         if (print_out):
             print('shape of A {}'.format(A.shape))
         if (print_out):
             print('chosen angles m={}:\n{}'.format(m, (corners_tiled)[A_repeat]
-                                                   .reshape((-1, m * 3))))
+                                                   .cp.reshape((-1, m * 3))))
         if (print_out):
             print('{}-polygones: {}'.format(m, rows_A))
         self.A = A

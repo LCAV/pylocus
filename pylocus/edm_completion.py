@@ -2,10 +2,7 @@
 # module EDM_COMPLETION
 import numpy as np
 
-try:
-    from cvxpy import *
-except:
-    print("WARNING from pylocs.edm_completion module: Failed to load cvxpy. This might lead to errors later on.")
+import cvxpy as cp
 
 from pylocus.basics import get_edm
 
@@ -94,7 +91,7 @@ def semidefinite_relaxation(edm_missing, lamda, W=None, print_out=False, **kwarg
 
     def kappa_cvx(gram, n):
         e = np.ones((n, 1))
-        return reshape(diag(gram), (n, 1)) * e.T + e * reshape(diag(gram), (1, n)) - 2 * gram
+        return cp.reshape(cp.diag(gram), (n, 1)) * e.T + e * cp.reshape(cp.diag(gram), (1, n)) - 2 * gram
 
     method = kwargs.pop('method', 'maximize')
     options = {'solver': 'CVXOPT'}
@@ -109,19 +106,19 @@ def semidefinite_relaxation(edm_missing, lamda, W=None, print_out=False, **kwarg
     V = np.c_[-np.ones((n - 1, 1)) / np.sqrt(n), np.eye(n - 1) -
               np.ones((n - 1, n - 1)) / (n + np.sqrt(n))].T
 
-    H = Variable((n - 1, n - 1), PSD=True)
+    H = cp.Variable((n - 1, n - 1), PSD=True)
     G = V * H * V.T  # * is overloaded
     edm_optimize = kappa_cvx(G, n)
 
     if method == 'maximize':
-        obj = Maximize(trace(H) - lamda *
-                       norm(multiply(W, (edm_optimize - edm_missing)), p=1))
+        obj = cp.Maximize(cp.trace(H) - lamda *
+                       cp.norm(cp.multiply(W, (edm_optimize - edm_missing)), p=1))
     # TODO: add a reference to paper where "minimize" is used instead of maximize. 
     elif method == 'minimize':
-        obj = Minimize(trace(H) + lamda *
-                       norm(multiply(W, (edm_optimize - edm_missing)), p=1))
+        obj = cp.Minimize(cp.trace(H) + lamda *
+                       norm(cp.multiply(W, (edm_optimize - edm_missing)), p=1))
 
-    prob = Problem(obj)
+    prob = cp.Problem(obj)
 
     total = prob.solve(**options)
     if print_out:
@@ -138,9 +135,9 @@ def semidefinite_relaxation(edm_missing, lamda, W=None, print_out=False, **kwarg
 
     if (print_out):
         if H.value is not None:
-            print('trace of H:', np.trace(H.value))
+            print('cp.trace of H:', cp.trace(H.value))
         print('other cost:', lamda *
-              norm(multiply(W, (edm_complete - edm_missing)), p=1).value)
+              norm(cp.multiply(W, (edm_complete - edm_missing)), p=1).value)
 
     return np.array(edm_complete)
 
