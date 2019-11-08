@@ -3,6 +3,7 @@
 ## Release new version
 
 1. Change the version number in 
+
 - pylocus/__init__.py
 - setup.py
 - docs/source/conf.py 
@@ -24,4 +25,7 @@
 python3 -m twine upload dist/*
 ```
 
-5. If above does not work, make sure that the information in ~/.pypirc is up to date.
+(If above does not work, make sure that the information in ~/.pypirc is up to date)
+
+5. Do not forget to create a new release on github as well.
+
