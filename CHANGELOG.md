@@ -2,6 +2,14 @@
 
 ## Unreleased
 
+## [0.0.5] - 2019-11-08
+### Changed
+
+- Remove unused angle algorithms, keeping only basic angle operations. The angle-based algorithms are a niche application and are now in a different respository.
+
+- Make cvxpy a compulsory dependence.
+
+
 ## [0.0.4] - 2019-09-12
 ### Changed
 

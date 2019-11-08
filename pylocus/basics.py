@@ -90,7 +90,7 @@ def eigendecomp(G, d):
     factor = np.empty((N,), dtype=lamda.dtype)
     np.sqrt(lamda_sorted[:d], out=factor[0:d])
     factor[d:] = 0.0
-    return factor, np.real(u)
+    return np.real(factor), np.real(u)
 
 
 def assert_print(this_should_be_less_than, this=1e-10):
@@ -178,7 +178,3 @@ def matrix_from_vector(vector, N):
     matrix = np.zeros((N, N), dtype=vector.dtype)
     matrix[triu_idx[0], triu_idx[1]] = vector
     return matrix
-
-
-if __name__ == "__main__":
-    print('nothing happens when running this module.')

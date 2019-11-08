@@ -96,3 +96,11 @@ def get_theta_tensor(theta, corners, N):
         theta_tensor[int(idx[0]), int(idx[1]), int(idx[2])] = theta[k]
         theta_tensor[int(idx[0]), int(idx[2]), int(idx[1])] = theta[k]
     return theta_tensor
+
+
+def get_index(corners, Pk, Pij):
+    ''' get index mask corresponding to angle at corner Pk with Pi, Pj.'''
+    angle1 = [Pk, Pij[0], Pij[1]]
+    angle2 = [Pk, Pij[1], Pij[0]]
+    index = np.bitwise_or(corners == angle1, corners == angle2)
+    return index.all(axis=1)

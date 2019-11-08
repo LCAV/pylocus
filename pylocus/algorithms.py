@@ -1,5 +1,8 @@
 #!/usr/bin/env python
 # module ALGORITHMS
+
+from math import pi
+
 import numpy as np
 
 IMPLEMENTED_METHODS = ['MDS',

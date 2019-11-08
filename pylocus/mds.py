@@ -1,10 +1,8 @@
 #!/usr/bin/env python
 # module MDS
 import numpy as np
-try:
-    from cvxpy import *
-except:
-    print("WARNING from pylocs.mds module: Failed to load cvxpy. This might lead to errors later on.")
+
+import cvxpy as cp
 
 from pylocus.basics import eigendecomp
 
@@ -122,12 +120,12 @@ def relaxedEMDS(X0, N, d, C, b, KE, print_out=False, lamda=10):
     """ Find the set of points from an edge kernel with geometric constraints, using convex rank relaxation.
     """
     E = C.shape[1]
-    X = Variable((E, E), PSD=True)
+    X = cp.Variable((E, E), PSD=True)
 
     constraints = [C[i, :] * X == b[i] for i in range(C.shape[0])]
 
-    obj = Minimize(trace(X) + lamda * norm(KE - X))
-    prob = Problem(obj, constraints)
+    obj = cp.Minimize(cp.trace(X) + lamda * cp.norm(KE - X))
+    prob = cp.Problem(obj, constraints)
 
     try:
         # CVXOPT is more accurate than SCS, even though slower.

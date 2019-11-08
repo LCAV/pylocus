@@ -4,14 +4,16 @@ from os import path
 
 here = path.abspath(path.dirname(__file__))
 
-# Get the long description from the README file
-with open(path.join(here, 'README.rst'), encoding='utf-8') as f:
-    long_description = f.read()
+long_description = '''
+
+Localization package. Source code and more information can be found on github at https://github.com/LCAV/pylocus.
+
+'''
 
 setup(
     name='pylocus',
 
-    version='0.0.4',
+    version='0.0.5',
 
     description='Localization Package',
 
