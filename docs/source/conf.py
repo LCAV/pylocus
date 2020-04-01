@@ -15,33 +15,10 @@
 import sys
 import os
 
-# If extensions (or modules to document with autodoc) are in another directory,
-# add these directories to sys.path here. If the directory is relative to the
-# documentation root, use os.path.abspath to make it absolute, like shown here.
-#sys.path.insert(0, os.path.abspath('.'))
-
-########### TRICK FOUND ON SOME TUTORIAL : ADD IN THE MOCK_MODULES ANY EXTERNAL MODULE YOU'RE USING IN YOUR PACKAGE.
-
-import mock
-
-MOCK_MODULES = ['numpy', 'scipy', 'sklearn', 'matplotlib', 'matplotlib.pyplot', 'scipy.interpolate', 'scipy.special', 'math', '__future__', 'toolboxutilities']
-for mod_name in MOCK_MODULES:
-    sys.modules[mod_name] = mock.Mock()
-
-# another trick for readthedocs
-# import os
-# on_rtd = os.environ.get('READTHEDOCS') == 'True'
-# if on_rtd:
-#     html_theme = 'default'
-# else:
-#     html_theme = 'nature'
-
-
-
 # -- General configuration ------------------------------------------------
 
 # If your documentation needs a minimal Sphinx version, state it here.
-#needs_sphinx = '1.0'
+needs_sphinx = '2.0'
 
 # Add any Sphinx extension module names here, as strings. They can be
 # extensions coming with Sphinx (named 'sphinx.ext.*') or your custom
@@ -52,16 +29,7 @@ extensions = [
     'sphinx.ext.coverage',
     'sphinx.ext.mathjax',
     'sphinx.ext.viewcode',
-
-    'sphinx.ext.autosummary',
-    #'sphinxcontrib.fulltoc'
-
-    #'sphinx.ext.napoleon',
-
-    # from Numpy
-    #'sphinx.ext.pngmath',
-    #'sphinx.ext.intersphinx',
-    #'sphinx.ext.autosummary',
+    'sphinx.ext.autosummary'
 ]
 
 #napoleon_google_docstring = False
