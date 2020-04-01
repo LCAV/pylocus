@@ -6,6 +6,7 @@ Useful basic math tools for localization from angles.
 from math import atan2, pi
 import numpy as np
 
+# function used by frum_X_to_Ypi
 def change_angles(method, theta, tol=1e-10):
     try:
         theta_new = np.zeros(theta.shape)
@@ -51,6 +52,7 @@ def from_0_to_2pi(theta, tol=1e-10):
 
 
 def get_absolute_angle(Pi, Pj):
+    """ Get asolute angle of edge from Pi to Pj, as seen at Pi, clockwise direction. """
     if (Pi == Pj).all():
         return 0
     y = Pj[1] - Pi[1]
@@ -60,6 +62,7 @@ def get_absolute_angle(Pi, Pj):
 
 
 def get_inner_angle(Pk, Pij):
+    """ Get inner angle from point Pk to pair of points Pij, between 0 and pi. """
     theta_ki = get_absolute_angle(Pk, Pij[0])
     theta_kj = get_absolute_angle(Pk, Pij[1])
     theta = abs(theta_ki - theta_kj)
@@ -95,6 +98,7 @@ def get_point(theta_ik, theta_jk, Pi, Pj):
 
 
 def get_theta_tensor(theta, corners, N):
+    """ Convert vectorized thetas to tensor form. """
     theta_tensor = np.zeros([N, N, N])
     for k, idx in enumerate(corners):
         theta_tensor[int(idx[0]), int(idx[1]), int(idx[2])] = theta[k]
