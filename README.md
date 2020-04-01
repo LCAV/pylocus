@@ -1,5 +1,7 @@
 # Welcome to pylocus, a python localization package
+
 [![Build Status](https://travis-ci.org/LCAV/pylocus.svg?branch=master)](https://travis-ci.org/LCAV/pylocus)
+[![Documentation Status](https://readthedocs.org/projects/pylocus/badge/?version=latest)](https://pylocus.readthedocs.io/en/latest/?badge=latest)
 
 This package contains Multidimensional Scaling, lateration, and other algorithms useful for localization using distances and/or angles.
 

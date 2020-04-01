@@ -15,7 +15,7 @@
 ```bash
   python3 setup.py sdist bdist_wheel
   python3 -m twine upload --repository-url https://test.pypi.org/legacy/ dist/*
-  python3 -m pip install --index-url https://test.pypi.org/simple/ --no-deps example-pkg-your-username
+  python3 -m pip install --index-url https://test.pypi.org/simple/ --no-deps pylocus 
   python3 -c "import pylocus.lateration" # test that it worked.
 ```
 
@@ -29,3 +29,14 @@ python3 -m twine upload dist/*
 
 5. Do not forget to create a new release on github as well.
 
+## Update documentation on github
+
+This is done automatically. If it fails, you can check your local installation using
+
+```
+pip install -r docs/requirements.txt
+mkdir docs/build
+sphinx-build -b html docs/source/ docs/build
+```
+
+And open `docs/build/index.html` to see the output.
