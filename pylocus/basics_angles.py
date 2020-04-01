@@ -1,11 +1,12 @@
 #!/usr/bin/env python
-# module BASICS_ANGLES
+""" 
+Useful basic math tools for localization from angles.
+"""
+
 from math import atan2, pi
 import numpy as np
 
-
 def change_angles(method, theta, tol=1e-10):
-    """ Function used by all angle conversion functions (from_x_to_x_pi(...))"""
     try:
         theta_new = np.zeros(theta.shape)
         for i, thet in enumerate(theta):
@@ -66,7 +67,7 @@ def get_inner_angle(Pk, Pij):
 
 
 def rmse_2pi(x, xhat):
-    ''' Calcualte rmse between vector or matrix x and xhat, ignoring mod of 2pi.'''
+    """ Calcualte rmse between vector or matrix x and xhat, ignoring modulo of 2pi."""
     real_diff = from_0_to_pi(x - xhat)
     np.square(real_diff, out=real_diff)
     sum_ = np.sum(real_diff)
@@ -74,12 +75,15 @@ def rmse_2pi(x, xhat):
 
 
 def get_point(theta_ik, theta_jk, Pi, Pj):
-    """ Calculate coordinates of point Pk given two points Pi, Pj and inner angles.  :param theta_ik: Inner angle at Pi to Pk.
+    """ Calculate coordinates of point Pk given two points Pi, Pj and inner angles.  
+
+    :param theta_ik: Inner angle at Pi to Pk.
     :param theta_jk: Inner angle at Pj to Pk.
     :param Pi: Coordinates of point Pi.
     :param Pj: Coordinates of point Pj.
 
     :return: Coordinate of point Pk.
+
     """
     A = np.array([[sin(theta_ik), -cos(theta_ik)],
                   [sin(theta_jk), -cos(theta_jk)]])
@@ -99,7 +103,7 @@ def get_theta_tensor(theta, corners, N):
 
 
 def get_index(corners, Pk, Pij):
-    ''' get index mask corresponding to angle at corner Pk with Pi, Pj.'''
+    """ Get index mask corresponding to angle at corner Pk with Pi, Pj.  """
     angle1 = [Pk, Pij[0], Pij[1]]
     angle2 = [Pk, Pij[1], Pij[0]]
     index = np.bitwise_or(corners == angle1, corners == angle2)

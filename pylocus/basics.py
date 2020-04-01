@@ -1,7 +1,10 @@
+#!/usr/bin/env python
+""" Useful basic math tools for localization from distances.
+"""
+
 import numpy as np
 import itertools
 from math import pi, atan, atan2, sqrt, acos, cos, sin
-
 
 def mse(x, xhat):
     """ Calcualte mse between vector or matrix x and xhat """

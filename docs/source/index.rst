@@ -44,6 +44,8 @@ If you want to contribute to this project, you may fork our GitHub main reposito
 Module contents
 ===============
 
+This is an overview of the most important elements and entry-points of this library.
+
 .. rubric:: Point Setups
 .. autosummary::
    :nosignatures:
@@ -69,6 +71,13 @@ Module contents
    pylocus.algorithms.reconstruct_emds
    pylocus.algorithms.reconstruct_cdm
 
+.. rubric:: Useful basics
+.. autosummary::
+   :nosignatures:
+
+   pylocus.basics
+   pylocus.basics_angles
+
 Documentation
 =============
 
@@ -79,6 +88,9 @@ Documentation
    :members:
    :show-inheritance:
 .. automodule:: pylocus.basics
+   :members:
+   :show-inheritance:
+.. automodule:: pylocus.basics_angles
    :members:
    :show-inheritance:
    

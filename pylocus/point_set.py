@@ -1,5 +1,6 @@
 #!/usr/bin/env python
-""" Module containing classes for handling 2D or 3D point sets including
+""" 
+Module containing classes for handling 2D or 3D point sets including
 point-to-point distances and angles.
 """
 import itertools
