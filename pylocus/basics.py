@@ -1,7 +1,10 @@
+#!/usr/bin/env python
+""" Useful basic math tools for localization from distances.
+"""
+
 import numpy as np
 import itertools
 from math import pi, atan, atan2, sqrt, acos, cos, sin
-
 
 def mse(x, xhat):
     """ Calcualte mse between vector or matrix x and xhat """
@@ -108,7 +111,7 @@ def divide_where_nonzero(divide_this, by_this):
     zero_mask = (by_this == 0)
     if zero_mask.size:
         result[zero_mask] = 0.0
-        nonzero_mask = zero_mask                         # creates a view
+        nonzero_mask = zero_mask # creates a view
         # overwrites memory of zero_mask
         np.logical_not(zero_mask, out=nonzero_mask)
         result[nonzero_mask] = divide_this[nonzero_mask] / \

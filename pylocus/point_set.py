@@ -1,5 +1,6 @@
 #!/usr/bin/env python
-""" Module containing classes for handling 2D or 3D point sets including
+""" 
+Module containing classes for handling 2D or 3D point sets including
 point-to-point distances and angles.
 """
 import itertools
@@ -18,7 +19,6 @@ class PointSet:
     :param self.points: Matrix of points (self.N x self.d).
     :param self.edm: Matrix (self.Nx self.N) of squared distances (Euclidean distance matrix).
     """
-
     def __init__(self, N, d):
         self.N = N
         self.d = d
@@ -47,7 +47,8 @@ class PointSet:
     def set_points(self, mode='', points=None, range_=RANGE, size=1):
         """ Initialize points according to predefined modes.
 
-        :param range_:[xmin, xmax, ymin, ymax], range of point sets
+        :param range_: [xmin, xmax, ymin, ymax], range of point sets
+
         """
         if mode == 'last':
             if points is None:
@@ -91,7 +92,6 @@ class PointSet:
                         (-1, )) / np.linalg.norm(new_direction)
                     u = u.cp.reshape((-1, )) / np.linalg.norm(u)
                     v = v.cp.reshape((-1, )) / np.linalg.norm(v)
-                    #print('{} + {} = {}'.format(acos(np.dot(new_direction,u)),acos(np.dot(new_direction,v)),acos(np.dot(u,v))))
                     if abs(
                             acos(np.dot(new_direction, u)) +
                             acos(np.dot(new_direction, v)) -
@@ -283,10 +283,8 @@ class HeterogenousSet(PointSet):
                 j_indices = self.C[:, k] == -1
                 idx_vij_3 = np.where(np.bitwise_and(
                     i_indices, j_indices))[0][0]
-                #print('v{}{}, v{}{}, v{}{}\n{}    {}    {}'.format(j,i,k,i,k,j,idx_vij_1,idx_vij_2,idx_vij_3))
                 C2[idx_vij_1, idx_vij_3] = 1
             else:
-                #print('v{}{}, v{}{} not considered.'.format(j,i1,j,i2))
                 to_be_deleted.append(idx_vij_1)
         C2 = np.delete(C2, to_be_deleted, axis=0)
         b = np.zeros((C2.shape[0], 1))
@@ -317,7 +315,6 @@ def sdm_from_dmi(dmi, N):
     from pylocus.basics import matrix_from_vector
     sdm_upper = matrix_from_vector(dmi, N)
     sdm = sdm_upper - sdm_upper.T
-    # assure diagonal is zero
     np.fill_diagonal(sdm, 0)
     return sdm
 
