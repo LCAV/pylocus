@@ -1,9 +1,6 @@
 .. pylocus documentation master file, adapted from linvpy on July 19, 2017.
 .. You can adapt this file completely to your liking, but it should at least contain the root `toctree` directive.
 
-.. image:: images/EPFL_logo.png
-   :align: left
-   :width: 20 %
 .. image:: images/lcav_logo_.png
    :align: right
    :width: 20 %
@@ -18,7 +15,7 @@
 Welcome to the pylocus documentation !
 ======================================
 
-pylocus is a Python package designed to solve general localization problems, :math:`min_X L(X)`,
+**pylocus** is a Python package designed to solve general localization problems, :math:`min_X L(X)`,
 where :math:`X` is a :math:`N` x :math:`d` matrix of coordinates of a point set and
 :math:`L(X)` is a cost function adapted to the problem at hand. 
 
@@ -34,53 +31,47 @@ Source code is on GitHub : https://github.com/LCAV/pylocus.
 Get it
 ======
 
-pylocus is available from PyPi and Python 3.6 compatible. If you already have pip installed, simply run : ::
+**pylocus** is available from PyPi and Python 3.6 compatible. If you already have pip installed, simply run : ::
 
-    $ sudo pip install --ignore-installed --upgrade pylocus
-
-.. index::
-
-Module contents
-===============
-
-
-.. rubric:: Point Setups
-.. automodule:: pylocus.point_set
-.. autosummary::
-   :nosignatures:
-
-   PointSet
-   AngleSet
-   HeterogenousSet
-
-.. rubric:: Distance Algorithms
-.. automodule:: pylocus.algorithms
-.. autosummary::
-   :nosignatures:
-
-   procrustes
-   reconstruct_mds
-   reconstruct_srls
-   reconstruct_dwmds
-   reconstruct_acd
-   reconstruct_sdp
-
-.. rubric:: Angle and Distance Algorithms
-.. autosummary::
-   :nosignatures:
-
-   reconstruct_emds
-   reconstruct_cdm
+    $ pip install pylocus
 
 Contribute
 ==========
 
 If you want to contribute to this project, you may fork our GitHub main repository repository : https://github.com/LCAV/pylocus and submit a pull request from a new branch **type/description**, where **type** can be  **fix**, **feature**, **doc**, or **various**.
 
+
+Module contents
+===============
+
+.. rubric:: Point Setups
+.. autosummary::
+   :nosignatures:
+
+   pylocus.point_set.PointSet
+   pylocus.point_set.HeterogenousSet
+
+.. rubric:: Distance Algorithms
+.. autosummary::
+   :nosignatures:
+
+   pylocus.algorithms.procrustes
+   pylocus.algorithms.reconstruct_mds (Classical MDS)
+   pylocus.algorithms.reconstruct_srls
+   pylocus.algorithms.reconstruct_dwmds
+   pylocus.algorithms.reconstruct_acd
+   pylocus.algorithms.reconstruct_sdp
+
+.. rubric:: Angle and Distance Algorithms
+.. autosummary::
+   :nosignatures:
+
+   pylocus.algorithms.reconstruct_emds
+   pylocus.algorithms.reconstruct_cdm
+
 Documentation
 =============
 
-.. module::
 .. automodule:: pylocus.point_set
    :members:
    :show-inheritance:

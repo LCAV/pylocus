@@ -47,7 +47,8 @@ class PointSet:
     def set_points(self, mode='', points=None, range_=RANGE, size=1):
         """ Initialize points according to predefined modes.
 
-        :param range_:[xmin, xmax, ymin, ymax], range of point sets
+        :param range_: [xmin, xmax, ymin, ymax], range of point sets
+
         """
         if mode == 'last':
             if points is None:
