@@ -30,7 +30,7 @@ def opt_space(M_E, r=None, niter=50, tol=1e-6, print_out=False):
     Returns: The following
         X:      A M_E.shape[0]xr numpy array
         S:      An rxr numpy array
-        Y:      A M_E.shape[1]xr numpy matrix such that M_hat = X*S*Y'
+        Y:      A M_E.shape[1]xr numpy matrix such that M_hat = X*S*(Y.T)'
         errs:   A vector containing norm((XSY' - M_E) * E, 'fro') / sqrt(|E|) at each iteration.
     '''
     n, m = M_E.shape
